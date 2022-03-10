@@ -1,0 +1,609 @@
+<html>
+    <head>
+        <title>Nerdle Solver</title>
+        <style>
+            th, td
+            {
+              border: 1px solid black;
+              border-radius: 10px;
+            }
+            td
+            {
+                text-align: center;
+                color: white;
+                font-weight: bold
+            }
+            table
+            {
+                width:        30%;
+                height:       40px;
+                table-layout: fixed;
+            }
+            td.selectedNode
+            {
+              border: 5px solid black;
+            }
+            td.invalidNode
+            {
+              background-color: red;
+            }
+            td.unselectedNode
+            {
+              border: 1px solid black;
+            }
+            td.nodePositionUnknown
+            {
+                background-color: grey;
+            }
+            td.nodePositionCorrect
+            {
+                background-color: green;
+            }
+            tbody.suggestionNodes
+            {
+              background-color: gold;
+            }
+
+            .noselect
+            {
+              -webkit-touch-callout: none; /* iOS Safari */
+                -webkit-user-select: none; /* Safari */
+                 -khtml-user-select: none; /* Konqueror HTML */
+                   -moz-user-select: none; /* Firefox */
+                    -ms-user-select: none; /* Internet Explorer/Edge */
+                        user-select: none; /* Non-prefixed version, currently
+                                              supported by Chrome and Opera */
+            }
+
+        </style>
+    </head>
+
+    <body onload="initialise()">
+        <p align="center" class="noselect">
+            <table>
+                <tbody id="solver">
+                </tbody>
+            </table>
+        </p>
+        <p align="center" id="issues">
+        </p>
+        <p align="center" id="messages">
+        </p>
+        <p align="center" class="noselect">
+            <table>
+                <tbody id="keyboardRow1">
+                </tbody>
+            </table>
+            <table>
+                <tbody id="keyboardRow2">
+                </tbody>
+            </table>
+            <table>
+                <tbody id="keyboardRow3">
+                </tbody>
+            </table>
+        </p>
+        <p align="center" class="noselect">
+            <b>Suggested Expression</b>
+            <table>
+                <tbody id="suggestion" class="suggestionNodes">
+                </tbody>
+            </table>
+        </p>
+    </body>
+
+    <script type="text/javascript">
+
+        const   kValidChars             = "0123456789+-*/="
+        const   kValidNumbersWithSign   = "0123456789+-"
+        const   kValidNumbers           = "0123456789"
+
+        // Solver Phases
+        const   E_ENTERING_EXPRESSION   = Symbol("E_ENTERING_EXPRESSION")
+        const   E_ENTERING_FEEDBACK     = Symbol("E_ENTERING_FEEDBACK")
+
+        var     eState                  = E_ENTERING_EXPRESSION;
+        
+        var     kBodyRoot               = null
+        var     kSuggestionRoot         = null
+        var     kSuggestions            = null
+        var     kSolverNodes            = []
+        var     kSelectedNode           = null
+        var     kCurrentRow             = null
+        var     kIssuesTextNode         = null
+        
+        function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown=false)
+        {
+            rowNodes = [];
+
+            kRowRootNode = document.createElement("tr");
+            
+            for (var i = 0; i < kText.length; ++i)
+            {
+                rowNodes[i] = document.createElement("td");
+                if (kText[i] == '\n')
+                {
+                    rowNodes[i].appendChild(document.createTextNode("Enter"));
+                }
+                else if (kText[i] == '\b')
+                {
+                    rowNodes[i].appendChild(document.createTextNode("Delete"));
+                }
+                else
+                {
+                    rowNodes[i].appendChild(document.createTextNode(kText[i]));
+                };
+                rowNodes[i].addEventListener("click", listenerFunction);
+                if (bSetUnknown)
+                {
+                    rowNodes[i].classList.add("nodePositionUnknown")
+                }
+                kRowRootNode.appendChild(rowNodes[i]);
+            }
+        
+            kBodyRoot.appendChild(kRowRootNode);
+            
+            return rowNodes;
+        }
+
+        function initialise()
+        {
+            // Root of the Solver Table
+            kBodyRoot = document.getElementById("solver");
+            
+            // Create the First Row
+            kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+            kSolverNodes.push(kCurrentRow);
+            selectNode(kCurrentRow[0]);
+
+            // Root of the Keyboard Table
+            addRow(document.getElementById("keyboardRow1"), "0123456789", virtualKeyboardFunction, true);
+            addRow(document.getElementById("keyboardRow2"), "+-*/=", virtualKeyboardFunction, true);
+            addRow(document.getElementById("keyboardRow3"), "\n\b", virtualKeyboardFunction, true);
+
+            // Suggestion
+            kSuggestionRoot = document.getElementById("suggestion")
+            kSuggestions = addRow(kSuggestionRoot, "9*8-7=65", clickSuggestionFunction);
+
+            // Add the Issues Text Node
+            kIssuesTextNode = document.createTextNode("No Issues");
+            document.getElementById("issues").appendChild(kIssuesTextNode);
+            
+            // Add the Messages Text Node
+            kMessagesTextNode = document.createTextNode("Please enter an equation to check, or just press Enter whilst blank to accept the suggestion");
+            document.getElementById("messages").appendChild(kMessagesTextNode);
+            
+            document.addEventListener("keydown", keypressFunction);
+        }
+
+        function selectNode(node)
+        {
+            if (kSelectedNode != null)
+            {
+                kSelectedNode.classList.remove("selectedNode");
+            }
+
+            kSelectedNode = node;
+            kSelectedNode.classList.add("selectedNode");
+        }
+
+        function registerKeypress(key, override=false)
+        {
+            if (E_ENTERING_EXPRESSION == eState)
+            {
+                switch (key)
+                {
+                    case "ArrowLeft":
+                    {
+                        const nCurrentIndex = kCurrentRow.indexOf(kSelectedNode);
+                        if (nCurrentIndex > 0)
+                        {
+                            selectNode(kCurrentRow[nCurrentIndex - 1]);
+                        }
+                    } break;
+
+                    case "ArrowRight":
+                    {
+                        const nCurrentIndex = kCurrentRow.indexOf(kSelectedNode);
+                        if (nCurrentIndex < (kCurrentRow.length-1))
+                        {
+                            selectNode(kCurrentRow[nCurrentIndex + 1]);
+                        }
+                    } break;
+
+                    case "Enter":
+                    {
+                        if (processExpression())
+                        {
+                            for (var i = 0; i < kCurrentRow.length; ++i)
+                            {
+                                kCurrentRow[i].removeEventListener("click", clickFunction)
+                                kCurrentRow[i].classList.remove("selectedNode")
+                            }
+                            eState = E_ENTERING_FEEDBACK;
+                            kMessagesTextNode.textContent = "Perfect, enter this suggestion into Nerdle, then keep tapping on each entry until they're colored exactly the same as they were in Nerdle..."
+                        }
+                    } break;
+
+                    case "Backspace":
+                    {
+                        registerKeypress(" ", true);
+                        registerKeypress("ArrowLeft");
+                        registerKeypress(" ", true);
+                    } break;
+
+                    default:
+                    {
+                        if (override || (kValidChars.indexOf(key) != -1))
+                        {
+                            kSelectedNode.textContent = key;
+                            kSelectedNode.classList.remove("invalidNode");
+                            if (!override)
+                            {
+                                const nCurrentIndex = kCurrentRow.indexOf(kSelectedNode);
+                                if (nCurrentIndex >= 0 && nCurrentIndex < (kCurrentRow.length-1))
+                                {
+                                    selectNode(kCurrentRow[nCurrentIndex + 1]);
+                                }
+                            }
+                        }
+                    } break;
+                }
+            }
+        }
+        
+        function clickFunction(e)
+        {
+            var caller = e.target || e.srcElement;
+            selectNode(caller);
+        }
+
+        function keypressFunction(e)
+        {
+            var caller = e.target || e.srcElement;
+            if (kSelectedNode != null)
+            {
+                registerKeypress(e.key);
+            }
+        }
+
+        function virtualKeyboardFunction(e)
+        {
+            if (E_ENTERING_EXPRESSION == eState)
+            {
+                var caller = e.target || e.srcElement;
+                switch (caller.childNodes[0].textContent)
+                {
+                    case "Delete":
+                    {
+                        registerKeypress("Backspace");
+                    } break;
+
+                    default:
+                    {
+                        registerKeypress(caller.childNodes[0].textContent);
+                    } break;
+                }
+            }
+        }
+        
+        function clickSuggestionFunction(e)
+        {
+            if (E_ENTERING_EXPRESSION == eState)
+            {
+                var caller = e.target || e.srcElement;
+                var nSuggestionId = kSuggestions.indexOf(caller)
+                kCurrentRow[nSuggestionId].childNodes[0].textContent = caller.childNodes[0].textContent
+            }
+        }
+
+        function parseIntegerWithUnary(kExpression)
+        {
+            // parseInt cannot cope with anything other than a unary -
+            // So collapse them manually
+            var bPositive    = true;
+            var nFirstNumber = -1;
+            for (var i = 0; (nFirstNumber == -1) && (i < kExpression.length); ++i)
+            {
+                const kChar = kExpression.charAt(i);
+                if (kChar == "-")
+                {
+                    bPositive = !bPositive;
+                }
+                else if (kValidNumbers.includes(kChar))
+                {
+                    nFirstNumber = i;
+                }
+            }
+            
+            return (bPositive ? 1 : -1) * parseInt(kExpression.substr(nFirstNumber));
+        }
+
+        function parseExpressionList(kExpressionList)
+        {
+            const kOrderOfPrecedence = "*/+-";
+            while (kExpressionList.length > 1)
+            {
+                const nSanityCheck = kExpressionList.length;
+                for (var i = 0; i < kOrderOfPrecedence.length; ++i)
+                {
+                    const kOperator = kOrderOfPrecedence.charAt(i);
+                    while (kExpressionList.includes(kOperator))
+                    {
+                        const nOperatorIndex = kExpressionList.indexOf(kOperator);
+                        switch (kOperator)
+                        {
+                            case "*":
+                            {
+                                kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] *
+                                                                  kExpressionList[nOperatorIndex+1];
+                                kExpressionList.splice(nOperatorIndex+1, 1);
+                                kExpressionList.splice(nOperatorIndex-1, 1);
+                            } break;
+
+                            case "/":
+                            {
+                                kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] /
+                                                                  kExpressionList[nOperatorIndex+1];
+                                kExpressionList.splice(nOperatorIndex+1, 1);
+                                kExpressionList.splice(nOperatorIndex-1, 1);
+                            } break;
+
+                            case "+":
+                            {
+                                kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] +
+                                                                  kExpressionList[nOperatorIndex+1];
+                                kExpressionList.splice(nOperatorIndex+1, 1);
+                                kExpressionList.splice(nOperatorIndex-1, 1);
+                            } break;
+
+                            case "-":
+                            {
+                                kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] -
+                                                                  kExpressionList[nOperatorIndex+1];
+                                kExpressionList.splice(nOperatorIndex+1, 1);
+                                kExpressionList.splice(nOperatorIndex-1, 1);
+                            } break;
+                        }
+                        break;
+                    }
+                }
+                if (nSanityCheck == kExpressionList.length)
+                {
+                    alert(kExpressionList);
+                    break;
+                }
+            }
+
+            return kExpressionList[0];
+        }
+        
+        function parseExpression(kExpression, nOffset)
+        {
+            // Convert the Expression into an array of values and operators
+            // Note: We'll resolve unaries at this stage to stop this being
+            //       an absolute headache
+            var kExpressionList = [];
+            var bAnyNumberFound = false;
+            var kValidityString = kValidNumbersWithSign;
+            var kCurrent        = "";
+            var bValid          = true;
+            
+            for (var i = 0; i < kExpression.length; ++i)
+            {
+                const kChar = kExpression.charAt(i);
+
+                if (false == bAnyNumberFound)
+                {
+                    if (kValidNumbers.includes(kChar))
+                    {
+                        bAnyNumberFound = true;
+                        kValidityString = kValidNumbers;
+                    }
+                }
+
+                if (kValidityString.includes(kChar))
+                {
+                    kCurrent += kChar;
+                }
+                else if (bAnyNumberFound)
+                {
+                    kExpressionList.push(parseIntegerWithUnary(kCurrent));
+                    kExpressionList.push(kChar);
+                    
+                    kValidityString = kValidNumbersWithSign;
+                    bAnyNumberFound = false;
+                    kCurrent        = "";
+                }
+                else
+                {
+                    kIssuesTextNode.textContent = "Multiple operators without corresponding values (First error shown in red)";
+                    kCurrentRow[i+nOffset].classList.add("invalidNode");
+                    return [false, 0];
+                }
+            }
+
+            if ((kCurrent.length == 0) || !bAnyNumberFound)
+            {
+                kIssuesTextNode.textContent = "Expression must end in a number to be valid";
+                kCurrentRow[kCurrent.length-1+nOffset].classList.add("invalidNode");
+                return [false, 0];
+            }
+            
+            kExpressionList.push(parseIntegerWithUnary(kCurrent));
+
+            return [true, parseExpressionList(kExpressionList)];
+        }
+        
+        function processExpression()
+        {
+            var kExpression             = "";
+            var bValid                  = true;
+            var bAllBlank               = true;
+            kIssuesTextNode.textContent = "No Issues";
+
+            // By default, everything is valid
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                kCurrentRow[i].classList.remove("invalidNode");
+                bAllBlank = bAllBlank && (kCurrentRow[i].childNodes[0].textContent == " ")
+            }
+            
+            // If the entry is all blank, we're using the suggestion
+            if (bAllBlank)
+            {
+                for (var i = 0; i < kCurrentRow.length; ++i)
+                {
+                    kCurrentRow[i].childNodes[0].textContent = kSuggestions[i].childNodes[0].textContent;
+                }
+            }
+            
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 1
+            //
+            // Any characters that aren't supposed to be there
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                const kChar = kCurrentRow[i].childNodes[0].textContent;
+                if (!kValidChars.includes(kChar))
+                {
+                    kCurrentRow[i].classList.add("invalidNode");
+                    bValid = false;
+                }
+                kExpression += kCurrentRow[i].childNodes[0].textContent;
+            }
+
+            if (!bValid)
+            {
+                kIssuesTextNode.textContent = "Incomplete entry (shown in red)";
+                return false
+            }
+
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 2
+            //
+            // Missing Equals
+            if (!kExpression.includes("="))
+            {
+                kIssuesTextNode.textContent = "No Equality '=' entry";
+                return false;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 3
+            //
+            // Multiple Equals
+            if (kExpression.split("=").length != 2)
+            {
+                for (var i = 0; i < kExpression.length; ++i)
+                {
+                    if (kExpression.charAt(i) == "=")
+                    {
+                        kCurrentRow[i].classList.add("invalidNode");
+                    }
+                }
+                kIssuesTextNode.textContent = "Too many '=' entries";
+                return false;
+            }
+            
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 4
+            //
+            // Equals at Beginning or End of Expression
+            const nEqualityIndex = kExpression.indexOf("=")
+            if ((nEqualityIndex == 0) || (nEqualityIndex == (kCurrentRow.length-1)))
+            {
+                kIssuesTextNode.textContent = "Invalid position for equality '='";
+                kCurrentRow[nEqualityIndex].classList.add("invalidNode");
+                return false;
+            }
+            
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 4
+            //
+            // First character isn't a numeric, unary plus or minus
+            if (!kValidNumbersWithSign.includes(kExpression.charAt(0)))
+            {
+                kIssuesTextNode.textContent = "First character must be one of the following: +, - or a number";
+                kCurrentRow[0].classList.add("invalidNode");
+                return false;
+            }
+            
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 5
+            //
+            // First after the equality statement isn't a numeric, unary plus or minus
+            if (!kValidNumbersWithSign.includes(kExpression.charAt(nEqualityIndex+1)))
+            {
+                kIssuesTextNode.textContent = "First character after the equals '=' sign must be one of the following: +, - or a number";
+                kCurrentRow[nEqualityIndex+1].classList.add("invalidNode");
+                return false;
+            }
+            
+            //////////////////////////////////////////////////////////////////
+            // Simple Test 6
+            //
+            // Right Side of the Equality cannot contain an expression
+            //
+            // Note: This isn't actually true, Nerdles parser actually allows unary stacking
+            //       i.e. -+5 which evalues to -5 is allowed.
+            //            This is silly, but it's how Nerdle works for now.......
+            bValid              = true;
+            var bAnyNumberFound = false;
+            var kValidityString = kValidNumbersWithSign;
+            
+            for (var i = nEqualityIndex+1; i < kExpression.length; ++i)
+            {
+                const kChar = kExpression.charAt(i);
+                if (false == bAnyNumberFound)
+                {
+                    if (kValidNumbers.includes(kChar))
+                    {
+                        bAnyNumberFound = true;
+                        kValidityString = kValidNumbers;
+                    }
+                }
+
+                if (!kValidityString.includes(kChar))
+                {
+                    kCurrentRow[i].classList.add("invalidNode");
+                    bValid = false;
+                }
+            }
+
+            if (!bValid)
+            {
+                kIssuesTextNode.textContent = "Right side of the equals '=' cannot contain an expression (operators shown in red)";
+                return false;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            // Non Trivial Test
+            //
+            // Evaluate the Left/Right Side of the equals statement, and check
+            // for validity / equality
+            const kResultLeft = parseExpression(kExpression.substr(0, nEqualityIndex), 0);
+            if (!kResultLeft[0])
+            {
+                return false;
+            }
+
+            const kResultRight = parseExpression(kExpression.substr(nEqualityIndex+1), nEqualityIndex+1);
+            if (!kResultRight[0])
+            {
+                return false;
+            }
+
+            if (kResultLeft[1] != kResultRight[1])
+            {
+                kCurrentRow[nEqualityIndex].classList.add("invalidNode");
+                kIssuesTextNode.textContent = "Expression is not equals.  Left side = " + kResultLeft[1] + ", Right Side = " + kResultRight[1] + ".";
+                return false;
+            }
+            
+            return true;
+        }
+        
+    </script>
+
+</html>

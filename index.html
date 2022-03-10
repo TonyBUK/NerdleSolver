@@ -239,6 +239,8 @@
                         {
                             kSelectedNode.textContent = key;
                             kSelectedNode.classList.remove("invalidNode");
+                            kSelectedNode.classList.add("nodePositionUnknown");
+
                             if (!override)
                             {
                                 const nCurrentIndex = kCurrentRow.indexOf(kSelectedNode);
@@ -420,6 +422,7 @@
                 {
                     kIssuesTextNode.textContent = "Multiple operators without corresponding values (First error shown in red)";
                     kCurrentRow[i+nOffset].classList.add("invalidNode");
+                    kCurrentRow[i+nOffset].classList.remove("nodePositionUnknown")
                     return [false, 0];
                 }
             }
@@ -428,6 +431,7 @@
             {
                 kIssuesTextNode.textContent = "Expression must end in a number to be valid";
                 kCurrentRow[kCurrent.length-1+nOffset].classList.add("invalidNode");
+                kCurrentRow[kCurrent.length-1+nOffset].classList.remove("nodePositionUnknown");
                 return [false, 0];
             }
             
@@ -447,6 +451,7 @@
             for (var i = 0; i < kCurrentRow.length; ++i)
             {
                 kCurrentRow[i].classList.remove("invalidNode");
+                kCurrentRow[i].classList.add("nodePositionUnknown");
                 bAllBlank = bAllBlank && (kCurrentRow[i].childNodes[0].textContent == " ")
             }
             
@@ -469,6 +474,7 @@
                 if (!kValidChars.includes(kChar))
                 {
                     kCurrentRow[i].classList.add("invalidNode");
+                    kCurrentRow[i].classList.remove("nodePositionUnknown");
                     bValid = false;
                 }
                 kExpression += kCurrentRow[i].childNodes[0].textContent;
@@ -501,6 +507,7 @@
                     if (kExpression.charAt(i) == "=")
                     {
                         kCurrentRow[i].classList.add("invalidNode");
+                        kCurrentRow[i].classList.remove("nodePositionUnknown");
                     }
                 }
                 kIssuesTextNode.textContent = "Too many '=' entries";
@@ -516,6 +523,7 @@
             {
                 kIssuesTextNode.textContent = "Invalid position for equality '='";
                 kCurrentRow[nEqualityIndex].classList.add("invalidNode");
+                kCurrentRow[nEqualityIndex].classList.remove("nodePositionUnknown");
                 return false;
             }
             
@@ -527,6 +535,7 @@
             {
                 kIssuesTextNode.textContent = "First character must be one of the following: +, - or a number";
                 kCurrentRow[0].classList.add("invalidNode");
+                kCurrentRow[0].classList.remove("nodePositionUnknown");
                 return false;
             }
             
@@ -538,6 +547,7 @@
             {
                 kIssuesTextNode.textContent = "First character after the equals '=' sign must be one of the following: +, - or a number";
                 kCurrentRow[nEqualityIndex+1].classList.add("invalidNode");
+                kCurrentRow[nEqualityIndex+1].classList.remove("nodePositionUnknown");
                 return false;
             }
             
@@ -568,6 +578,7 @@
                 if (!kValidityString.includes(kChar))
                 {
                     kCurrentRow[i].classList.add("invalidNode");
+                    kCurrentRow[i].classList.remove("nodePositionUnknown");
                     bValid = false;
                 }
             }
@@ -598,6 +609,7 @@
             if (kResultLeft[1] != kResultRight[1])
             {
                 kCurrentRow[nEqualityIndex].classList.add("invalidNode");
+                kCurrentRow[nEqualityIndex].classList.remove("nodePositionUnknown");
                 kIssuesTextNode.textContent = "Expression is not equals.  Left side = " + kResultLeft[1] + ", Right Side = " + kResultRight[1] + ".";
                 return false;
             }

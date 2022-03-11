@@ -34,7 +34,7 @@ Firstly, this needs to implement Nerdle itself, so I've essentially reverse engi
     * If it's not the *only* time this number/operator has been guessed in this round, then it is needed, but this instance indicates we have too many.
   * Black on the keyboard means the number/operator is not used anywhere in the solution.
 
-So as indicated, black on guesses is where things get interested, as what it tells us is how *many* instances of a number/operator are needed.
+So as indicated, black on guesses is where things get interesting, as what it tells us is how *many* instances of a number/operator are needed.
 
 Secondly, the part you're here for, the solver...
 

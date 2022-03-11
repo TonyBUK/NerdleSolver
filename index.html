@@ -41,19 +41,23 @@
             }
             td.nodePositionCorrect
             {
-                background-color: green;
+                background-color: rgb(57,136,116);
             }
             td.nodePositionUsed
             {
-                background-color: purple;
+                background-color: rgb(134,4,88);
             }
             td.nodePositionUnused
             {
-                background-color: black;
+                background-color: rgb(22,24,3);
             }
             tbody.suggestionNodes
             {
               background-color: gold;
+            }
+            div.dimmed
+            {
+                visibility: hidden;
             }
 
             .noselect
@@ -68,6 +72,11 @@
             }
 
         </style>
+
+        <script src="nerdleglobals.js" type="text/javascript"></script>
+        <script src="nerdleui.js" type="text/javascript"></script>
+        <script src="nerdlesolver.js" type="text/javascript"></script>
+
     </head>
 
     <body onload="initialise()">
@@ -84,29 +93,30 @@
         </p>
         <p align="center" id="messages">
         </p>
-        <p align="center" class="noselect">
-            <table>
-                <tbody id="keyboardRow1">
-                </tbody>
-            </table>
-            <table>
-                <tbody id="keyboardRow2">
-                </tbody>
-            </table>
-            <table>
-                <tbody id="keyboardRow3">
-                </tbody>
-            </table>
-        </p>
-        <p align="center" class="noselect">
-            <b>Suggested Expression</b>
-            <table>
-                <tbody id="suggestion" class="suggestionNodes">
-                </tbody>
-            </table>
-        </p>
-    </body>
 
-    <script src="nerdlesolver.js" type="text/javascript"></script>
+        <div id="dimmer">
+            <p align="center" class="noselect">
+                <table>
+                    <tbody id="keyboardRow1">
+                    </tbody>
+                </table>
+                <table>
+                    <tbody id="keyboardRow2">
+                    </tbody>
+                </table>
+                <table>
+                    <tbody id="keyboardRow3">
+                    </tbody>
+                </table>
+            </p>
+            <p align="center" class="noselect">
+                <b>Suggested Expression</b>
+                <table>
+                    <tbody id="suggestion" class="suggestionNodes">
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </body>
 
 </html>

@@ -105,3 +105,10 @@ The idea is we want to end up with a scenario where:
 * All the positions have exactly one entry, meaning we know exactly what input is used in what position.
 
 The closer we get to achieving this, the less possible permutations there are that satisfy a balanced equation.
+
+In terms of the balanced equation, we need to find an equation that meets the known criteria:
+
+* All known positions are filled with the input.
+* All unknown positions are filled with the possible inputs.
+* The total of each of the inputs that are used/not used all satisfy the known ranges for each input.
+* If possible, avoid solutions which abuse unary +/- and leading zeroes, these will only be used if all other possibilities have been eliminated.

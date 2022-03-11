@@ -280,6 +280,7 @@ function registerKeypress(key, override=false)
                 if (bWinState)
                 {
                     kMessagesTextNode.textContent = "Winner!";
+                    kColourEntry.classList.add(E_DIMMED);
                     eState = E_WINNER;
                 }
                 else

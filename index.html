@@ -17,14 +17,17 @@
             table
             {
                 width:        100%;
-                height:       120px;
                 table-layout: fixed;
+            }
+            tr
+            {
+                height:       120px;
             }
             td.selectedNode
             {
               border: 5px solid black;
             }
-            td.invalidNode
+            td.nodeInvalid
             {
               background-color: red;
             }
@@ -39,6 +42,14 @@
             td.nodePositionCorrect
             {
                 background-color: green;
+            }
+            td.nodePositionUsed
+            {
+                background-color: purple;
+            }
+            td.nodePositionUnused
+            {
+                background-color: black;
             }
             tbody.suggestionNodes
             {
@@ -95,23 +106,38 @@
 
     <script type="text/javascript">
 
-        const   kValidChars             = "0123456789+-*/="
-        const   kValidNumbersWithSign   = "0123456789+-"
-        const   kValidNumbers           = "0123456789"
+        const   kValidOperators             = "+-*/=";
+        const   kValidNumbers               = "0123456789";
+        const   kValidNumbersWithSign       = kValidNumbers + "+-";
+        const   kValidChars                 = kValidNumbers + kValidOperators;
 
         // Solver Phases
-        const   E_ENTERING_EXPRESSION   = Symbol("E_ENTERING_EXPRESSION")
-        const   E_ENTERING_FEEDBACK     = Symbol("E_ENTERING_FEEDBACK")
+        const   E_ENTERING_EXPRESSION       = Symbol("E_ENTERING_EXPRESSION");
+        const   E_ENTERING_FEEDBACK         = Symbol("E_ENTERING_FEEDBACK");
+        const   E_WINNER                    = Symbol("E_WINNER");
 
-        var     eState                  = E_ENTERING_EXPRESSION;
+        // Node States
+        const   E_NODE_POSITION_CORRECT     = "nodePositionCorrect";
+        const   E_NODE_POSITION_USED        = "nodePositionUsed";
+        const   E_NODE_POSITION_UNUSED      = "nodePositionUnused";
+        const   E_NODE_POSITION_UNKNOWN     = "nodePositionUnknown";
+        const   E_NODE_INVALID              = "nodeInvalid";
+
+        var     eState                      = E_ENTERING_EXPRESSION;
         
-        var     kBodyRoot               = null
-        var     kSuggestionRoot         = null
-        var     kSuggestions            = null
-        var     kSolverNodes            = []
-        var     kSelectedNode           = null
-        var     kCurrentRow             = null
-        var     kIssuesTextNode         = null
+        var     kBodyRoot                   = null;
+        var     kSuggestionRoot             = null;
+        var     kSuggestions                = null;
+        var     kAllRows                    = [];
+        var     kSelectedNode               = null;
+        var     kCurrentRow                 = null;
+        var     kIssuesTextNode             = null;
+        var     kExpression                 = "";
+        var     kVirtuakKeyboardNumbers     = null;
+        var     kVirtuakKeyboardOperators   = null;
+
+        var     kSolverRowData              = [];
+        var     kSolverInputData            = [];
         
         function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown=false)
         {
@@ -137,7 +163,7 @@
                 rowNodes[i].addEventListener("click", listenerFunction);
                 if (bSetUnknown)
                 {
-                    rowNodes[i].classList.add("nodePositionUnknown")
+                    rowNodes[i].classList.add(E_NODE_POSITION_UNKNOWN);
                 }
                 kRowRootNode.appendChild(rowNodes[i]);
             }
@@ -154,12 +180,12 @@
             
             // Create the First Row
             kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
-            kSolverNodes.push(kCurrentRow);
+            kAllRows.push(kCurrentRow);
             selectNode(kCurrentRow[0]);
 
             // Root of the Keyboard Table
-            addRow(document.getElementById("keyboardRow1"), "0123456789", virtualKeyboardFunction, true);
-            addRow(document.getElementById("keyboardRow2"), "+-*/=", virtualKeyboardFunction, true);
+            kVirtuakKeyboardNumbers   = addRow(document.getElementById("keyboardRow1"), kValidNumbers,   virtualKeyboardFunction, true);
+            kVirtuakKeyboardOperators = addRow(document.getElementById("keyboardRow2"), kValidOperators, virtualKeyboardFunction, true);
             addRow(document.getElementById("keyboardRow3"), "\n\b", virtualKeyboardFunction, true);
 
             // Suggestion
@@ -175,6 +201,53 @@
             document.getElementById("messages").appendChild(kMessagesTextNode);
             
             document.addEventListener("keydown", keypressFunction);
+
+            // Initialise the Solver
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                kSolverRowData[i] = "";
+                var kIsnt  = "";
+                if ((0 == i) || (i == (kCurrentRow.length-1)))
+                {
+                    for (var j = 0; j < kValidOperators.length; ++j)
+                    {
+                        const kChar = kValidOperators[j];
+                        if (!kValidNumbersWithSign.includes(kChar) || (i == (kCurrentRow.length - 1)))
+                        {
+                            kIsnt += kChar;
+                        }
+                    }
+                }
+                
+                for (var j = 0; j < kValidChars.length; ++j)
+                {
+                    const kChar = kValidChars[j];
+                    if (!kIsnt.includes(kChar))
+                    {
+                        kSolverRowData[i] += kChar;
+                    }
+                }
+            }
+            
+            for (var i = 0; i < kValidChars.length; ++i)
+            {
+                const kChar         = kValidChars[i];
+                kSolverInputData[i] = {};
+                kSolverInputData[i]["min"] = 0;
+                kSolverInputData[i]["max"] = kSolverRowData.length - 1;
+                if (kChar == "=")
+                {
+                    kSolverInputData[i]["min"] = 1;
+                    kSolverInputData[i]["max"] = 1;
+                }
+                else if (kValidOperators.includes(kChar))
+                {
+                    if (!kValidNumbersWithSign.includes(kChar))
+                    {
+                        --kSolverInputData[i]["max"];
+                    }
+                }
+            }
         }
 
         function selectNode(node)
@@ -188,6 +261,38 @@
             kSelectedNode.classList.add("selectedNode");
         }
 
+        function toggleNode(node)
+        {
+            const nIndex = kCurrentRow.indexOf(node);
+            const kChar  = node.childNodes[0].textContent;
+            if ((kSolverRowData[nIndex].length == 1) &&
+                (kSolverRowData[nIndex] == kChar))
+            {
+                return;
+            }
+
+            if (node.classList.contains(E_NODE_POSITION_UNKNOWN))
+            {
+                node.classList.replace(E_NODE_POSITION_UNKNOWN, E_NODE_POSITION_UNUSED);
+            }
+            else if (node.classList.contains(E_NODE_INVALID))
+            {
+                node.classList.replace(E_NODE_INVALID, E_NODE_POSITION_UNUSED);
+            }
+            else if (node.classList.contains(E_NODE_POSITION_UNUSED))
+            {
+                node.classList.replace(E_NODE_POSITION_UNUSED, E_NODE_POSITION_USED);
+            }
+            else if (node.classList.contains(E_NODE_POSITION_USED))
+            {
+                node.classList.replace(E_NODE_POSITION_USED, E_NODE_POSITION_CORRECT);
+            }
+            else if (node.classList.contains(E_NODE_POSITION_CORRECT))
+            {
+                node.classList.replace(E_NODE_POSITION_CORRECT, E_NODE_POSITION_UNUSED);
+            }
+        }
+        
         function registerKeypress(key, override=false)
         {
             if (E_ENTERING_EXPRESSION == eState)
@@ -218,11 +323,20 @@
                         {
                             for (var i = 0; i < kCurrentRow.length; ++i)
                             {
-                                kCurrentRow[i].removeEventListener("click", clickFunction)
-                                kCurrentRow[i].classList.remove("selectedNode")
+                                kCurrentRow[i].classList.remove("selectedNode");
                             }
                             eState = E_ENTERING_FEEDBACK;
-                            kMessagesTextNode.textContent = "Perfect, enter this suggestion into Nerdle, then keep tapping on each entry until they're colored exactly the same as they were in Nerdle..."
+                            kMessagesTextNode.textContent = "Perfect, enter this suggestion into Nerdle, then keep tapping on each entry until they're colored exactly the same as they were in Nerdle... then press Enter to accept."
+
+                            for (var i = 0; i < kCurrentRow.length; ++i)
+                            {
+                                if ((kSolverRowData[i].length == 1) &&
+                                    (kSolverRowData[i] == kCurrentRow[i].childNodes[0].textContent))
+                                {
+                                    kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
+                                    kCurrentRow[i].classList.add(E_NODE_POSITION_CORRECT);
+                                }
+                            }
                         }
                     } break;
 
@@ -238,8 +352,8 @@
                         if (override || (kValidChars.indexOf(key) != -1))
                         {
                             kSelectedNode.textContent = key;
-                            kSelectedNode.classList.remove("invalidNode");
-                            kSelectedNode.classList.add("nodePositionUnknown");
+                            kSelectedNode.classList.remove(E_NODE_INVALID);
+                            kSelectedNode.classList.add(E_NODE_POSITION_UNKNOWN);
 
                             if (!override)
                             {
@@ -253,18 +367,73 @@
                     } break;
                 }
             }
+            else
+            {
+                if ("Enter" == key)
+                {
+                    if (processResult())
+                    {
+                        var bWinState = true;
+                        for (var i = 0; i < kCurrentRow.length; ++i)
+                        {
+                            kCurrentRow[i].removeEventListener("click", clickFunction);
+                            if (!kCurrentRow[i].classList.contains(E_NODE_POSITION_CORRECT))
+                            {
+                                bWinState = false;
+                            }
+                        }
+
+                        if (bWinState)
+                        {
+                            kMessagesTextNode.textContent = "Winner!";
+                            eState = E_WINNER;
+                        }
+                        else
+                        {
+                            // Create the Next Row
+                            kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+                            kAllRows.push(kCurrentRow);
+                            selectNode(kCurrentRow[0]);
+
+                            kMessagesTextNode.textContent = "Please enter an equation to check, or just press Enter whilst blank to accept the suggestion";
+                            eState = E_ENTERING_EXPRESSION;
+
+                            // Update the Suggestion
+                            kNewSuggestion = generateNewSuggestion();
+                            for (var i = 0; i < kSuggestions.length; ++i)
+                            {
+                                kSuggestions[i].childNodes[0].textContent = kNewSuggestion[i];
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         function clickFunction(e)
         {
             var caller = e.target || e.srcElement;
-            selectNode(caller);
+            if (E_ENTERING_EXPRESSION == eState)
+            {
+                selectNode(caller);
+            }
+            else
+            {
+                toggleNode(caller);
+            }
         }
 
         function keypressFunction(e)
         {
             var caller = e.target || e.srcElement;
-            if (kSelectedNode != null)
+            if (E_ENTERING_EXPRESSION == eState)
+            {
+                if (kSelectedNode != null)
+                {
+                    registerKeypress(e.key);
+                }
+            }
+            else
             {
                 registerKeypress(e.key);
             }
@@ -272,9 +441,9 @@
 
         function virtualKeyboardFunction(e)
         {
+            var caller = e.target || e.srcElement;
             if (E_ENTERING_EXPRESSION == eState)
             {
-                var caller = e.target || e.srcElement;
                 switch (caller.childNodes[0].textContent)
                 {
                     case "Delete":
@@ -288,6 +457,10 @@
                     } break;
                 }
             }
+            else
+            {
+                registerKeypress(caller.childNodes[0].textContent);
+            }
         }
         
         function clickSuggestionFunction(e)
@@ -300,12 +473,18 @@
             }
         }
 
-        function parseIntegerWithUnary(kExpression)
+        function parseIntegerWithUnary(kExpression, bStrict)
         {
             // parseInt cannot cope with anything other than a unary -
             // So collapse them manually
             var bPositive    = true;
             var nFirstNumber = -1;
+
+            if (bStrict && (kExpression[0] == "+"))
+            {
+                return NaN;
+            }
+
             for (var i = 0; (nFirstNumber == -1) && (i < kExpression.length); ++i)
             {
                 const kChar = kExpression.charAt(i);
@@ -315,11 +494,28 @@
                 }
                 else if (kValidNumbers.includes(kChar))
                 {
+                    if (bStrict && (i > 1))
+                    {
+                        return NaN;
+                    }
                     nFirstNumber = i;
                 }
             }
+
+            const kAbsoluteValue = kExpression.substr(nFirstNumber);
+            if (bStrict)
+            {
+                if ((kAbsoluteValue.length > 1) && (kAbsoluteValue[0] == "0"))
+                {
+                    return NaN;
+                }
+                else if ((nFirstNumber > 0) && (kAbsoluteValue[0] == "0"))
+                {
+                    return NaN;
+                }
+            }
             
-            return (bPositive ? 1 : -1) * parseInt(kExpression.substr(nFirstNumber));
+            return (bPositive ? 1 : -1) * parseInt(kAbsoluteValue);
         }
 
         function parseExpressionList(kExpressionList)
@@ -381,7 +577,7 @@
             return kExpressionList[0];
         }
         
-        function parseExpression(kExpression, nOffset)
+        function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=true, bAllowExpression=true)
         {
             // Convert the Expression into an array of values and operators
             // Note: We'll resolve unaries at this stage to stop this being
@@ -411,7 +607,12 @@
                 }
                 else if (bAnyNumberFound)
                 {
-                    kExpressionList.push(parseIntegerWithUnary(kCurrent));
+                    const nValue = parseIntegerWithUnary(kCurrent, bStrict);
+                    if (isNaN(nValue))
+                    {
+                        return [false, 0];
+                    }
+                    kExpressionList.push(nValue);
                     kExpressionList.push(kChar);
                     
                     kValidityString = kValidNumbersWithSign;
@@ -420,39 +621,58 @@
                 }
                 else
                 {
-                    kIssuesTextNode.textContent = "Multiple operators without corresponding values (First error shown in red)";
-                    kCurrentRow[i+nOffset].classList.add("invalidNode");
-                    kCurrentRow[i+nOffset].classList.remove("nodePositionUnknown")
+                    if (bRenderError)
+                    {
+                        kIssuesTextNode.textContent = "Multiple operators without corresponding values (First error shown in red)";
+                        kCurrentRow[i+nOffset].classList.add(E_NODE_INVALID);
+                        kCurrentRow[i+nOffset].classList.remove(E_NODE_POSITION_UNKNOWN);
+                    }
                     return [false, 0];
                 }
             }
 
             if ((kCurrent.length == 0) || !bAnyNumberFound)
             {
-                kIssuesTextNode.textContent = "Expression must end in a number to be valid";
-                kCurrentRow[kCurrent.length-1+nOffset].classList.add("invalidNode");
-                kCurrentRow[kCurrent.length-1+nOffset].classList.remove("nodePositionUnknown");
+                if (bRenderError)
+                {
+                    kIssuesTextNode.textContent = "Expression must end in a number to be valid";
+                    kCurrentRow[kCurrent.length-1+nOffset].classList.add(E_NODE_INVALID);
+                    kCurrentRow[kCurrent.length-1+nOffset].classList.remove(E_NODE_POSITION_UNKNOWN);
+                }
                 return [false, 0];
             }
             
-            kExpressionList.push(parseIntegerWithUnary(kCurrent));
+            const nValue = parseIntegerWithUnary(kCurrent, bStrict);
+            if (isNaN(nValue))
+            {
+                return [false, 0];
+            }
+            kExpressionList.push(nValue);
+
+            if (false == bAllowExpression)
+            {
+                if (kExpression.length != 1)
+                {
+                    return [false, 0]
+                }
+            }
 
             return [true, parseExpressionList(kExpressionList)];
         }
         
         function processExpression()
         {
-            var kExpression             = "";
             var bValid                  = true;
             var bAllBlank               = true;
             kIssuesTextNode.textContent = "No Issues";
+            kExpression                    = "";
 
             // By default, everything is valid
             for (var i = 0; i < kCurrentRow.length; ++i)
             {
-                kCurrentRow[i].classList.remove("invalidNode");
-                kCurrentRow[i].classList.add("nodePositionUnknown");
-                bAllBlank = bAllBlank && (kCurrentRow[i].childNodes[0].textContent == " ")
+                kCurrentRow[i].classList.remove(E_NODE_INVALID);
+                kCurrentRow[i].classList.add(E_NODE_POSITION_UNKNOWN);
+                bAllBlank = bAllBlank && (kCurrentRow[i].childNodes[0].textContent == " ");
             }
             
             // If the entry is all blank, we're using the suggestion
@@ -473,8 +693,8 @@
                 const kChar = kCurrentRow[i].childNodes[0].textContent;
                 if (!kValidChars.includes(kChar))
                 {
-                    kCurrentRow[i].classList.add("invalidNode");
-                    kCurrentRow[i].classList.remove("nodePositionUnknown");
+                    kCurrentRow[i].classList.add(E_NODE_INVALID);
+                    kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
                     bValid = false;
                 }
                 kExpression += kCurrentRow[i].childNodes[0].textContent;
@@ -506,8 +726,8 @@
                 {
                     if (kExpression.charAt(i) == "=")
                     {
-                        kCurrentRow[i].classList.add("invalidNode");
-                        kCurrentRow[i].classList.remove("nodePositionUnknown");
+                        kCurrentRow[i].classList.add(E_NODE_INVALID);
+                        kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
                     }
                 }
                 kIssuesTextNode.textContent = "Too many '=' entries";
@@ -522,8 +742,8 @@
             if ((nEqualityIndex == 0) || (nEqualityIndex == (kCurrentRow.length-1)))
             {
                 kIssuesTextNode.textContent = "Invalid position for equality '='";
-                kCurrentRow[nEqualityIndex].classList.add("invalidNode");
-                kCurrentRow[nEqualityIndex].classList.remove("nodePositionUnknown");
+                kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
+                kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
                 return false;
             }
             
@@ -534,8 +754,8 @@
             if (!kValidNumbersWithSign.includes(kExpression.charAt(0)))
             {
                 kIssuesTextNode.textContent = "First character must be one of the following: +, - or a number";
-                kCurrentRow[0].classList.add("invalidNode");
-                kCurrentRow[0].classList.remove("nodePositionUnknown");
+                kCurrentRow[0].classList.add(E_NODE_INVALID);
+                kCurrentRow[0].classList.remove(E_NODE_POSITION_UNKNOWN);
                 return false;
             }
             
@@ -546,8 +766,8 @@
             if (!kValidNumbersWithSign.includes(kExpression.charAt(nEqualityIndex+1)))
             {
                 kIssuesTextNode.textContent = "First character after the equals '=' sign must be one of the following: +, - or a number";
-                kCurrentRow[nEqualityIndex+1].classList.add("invalidNode");
-                kCurrentRow[nEqualityIndex+1].classList.remove("nodePositionUnknown");
+                kCurrentRow[nEqualityIndex+1].classList.add(E_NODE_INVALID);
+                kCurrentRow[nEqualityIndex+1].classList.remove(E_NODE_POSITION_UNKNOWN);
                 return false;
             }
             
@@ -577,8 +797,8 @@
 
                 if (!kValidityString.includes(kChar))
                 {
-                    kCurrentRow[i].classList.add("invalidNode");
-                    kCurrentRow[i].classList.remove("nodePositionUnknown");
+                    kCurrentRow[i].classList.add(E_NODE_INVALID);
+                    kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
                     bValid = false;
                 }
             }
@@ -608,15 +828,325 @@
 
             if (kResultLeft[1] != kResultRight[1])
             {
-                kCurrentRow[nEqualityIndex].classList.add("invalidNode");
-                kCurrentRow[nEqualityIndex].classList.remove("nodePositionUnknown");
+                kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
+                kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
                 kIssuesTextNode.textContent = "Expression is not equals.  Left side = " + kResultLeft[1] + ", Right Side = " + kResultRight[1] + ".";
                 return false;
             }
             
             return true;
         }
-        
+
+        function getStateWeighting(kClassState)
+        {
+            if (E_NODE_POSITION_UNKNOWN == kClassState)
+            {
+                return 0;
+            }
+            else if (E_NODE_POSITION_UNUSED == kClassState)
+            {
+                return 1;
+            }
+            else if (E_NODE_POSITION_USED == kClassState)
+            {
+                return 2;
+            }
+            else if (E_NODE_POSITION_CORRECT == kClassState)
+            {
+                return 3;
+            }
+        }
+
+        function processResultForVirtualKeyboard(kEntries, kCurrentRow, kVirtualKeyboardRow)
+        {
+            for (var i = 0; i < kEntries.length; ++i)
+            {
+                const kEntry                    = kEntries.charAt(i);
+                const kInitialWorstFound        = kVirtualKeyboardRow[i].classList.item(0);
+                const nInitialWorstCaseWeight   = getStateWeighting(kInitialWorstFound);
+                var   kWorstFound               = kInitialWorstFound;
+                var   nWorstCaseWeight          = nInitialWorstCaseWeight;
+
+                for (var j = 0; j < kCurrentRow.length; ++j)
+                {
+                    const kCandidateChar   = kCurrentRow[j].childNodes[0].textContent;
+                    if (kCandidateChar == kEntry)
+                    {
+                        const kCandidate       = kCurrentRow[j].classList.item(0);
+                        const nCandidateWeight = getStateWeighting(kCandidate);
+
+                        if (nCandidateWeight > nWorstCaseWeight)
+                        {
+                            kWorstFound      = kCandidate;
+                            nWorstCaseWeight = nCandidateWeight;
+                        }
+                    }
+                }
+
+                if (nWorstCaseWeight > nInitialWorstCaseWeight)
+                {
+                    kVirtualKeyboardRow[i].classList.replace(kInitialWorstFound, kWorstFound);
+                }
+            }
+        }
+
+        function processResult()
+        {
+            var bValid = true;
+            kIssuesTextNode.textContent = "No Issues";
+
+            // Check for Incomplete Nodes
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                if (kCurrentRow[i].classList.contains(E_NODE_POSITION_UNKNOWN))
+                {
+                    bValid = false;
+                    kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
+                    kCurrentRow[i].classList.add(E_NODE_INVALID);
+                }
+                else if (kCurrentRow[i].classList.contains(E_NODE_INVALID))
+                {
+                    bValid = false;
+                }
+            }
+
+            if (!bValid)
+            {
+                kIssuesTextNode.textContent = "Please click on *ALL* entries until they match the Nerdle result (any red entries)";
+                return false;
+            }
+
+            // Update what we know for the Virtual Keyboard
+            processResultForVirtualKeyboard(kValidNumbers,   kCurrentRow, kVirtuakKeyboardNumbers,   kSolverRowData);
+            processResultForVirtualKeyboard(kValidOperators, kCurrentRow, kVirtuakKeyboardOperators, kSolverRowData);
+
+            // Gather stats for decision making
+            var kCharPositionUsedCount   = [];
+            var kCharPositionUnusedCount = [];
+            for (var i = 0; i < kValidChars.length; ++i)
+            {
+                kCharPositionUsedCount[i]   = NaN;
+                kCharPositionUnusedCount[i] = NaN;
+            }
+
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                const kChar  = kCurrentRow[i].childNodes[0].textContent;
+                const kState = kCurrentRow[i].classList.item(0);
+                const nIndex = kValidChars.indexOf(kChar);
+                if (E_NODE_POSITION_UNUSED != kState)
+                {
+                    if (isNaN(kCharPositionUsedCount[nIndex]))
+                    {
+                        kCharPositionUsedCount[nIndex] = 0;
+                    }
+                    ++kCharPositionUsedCount[nIndex];
+                }
+                else
+                {
+                    if (isNaN(kCharPositionUnusedCount[nIndex]))
+                    {
+                        kCharPositionUnusedCount[nIndex] = 0;
+                    }
+                    ++kCharPositionUnusedCount[nIndex];
+                }
+            }
+
+            // Update the Known Min/Maxes
+            for (var i = 0; i < kValidChars.length; ++i)
+            {
+                if (!isNaN(kCharPositionUnusedCount[i]))
+                {
+                    if (isNaN(kCharPositionUsedCount[i]))
+                    {
+                        kSolverInputData[i]["min"] = 0;
+                        kSolverInputData[i]["max"] = 0;
+                    }
+                    else
+                    {
+                        kSolverInputData[i]["max"] = kCharPositionUsedCount[i];
+                    }
+                }
+                else if (!isNaN(kCharPositionUsedCount[i]))
+                {
+                    if (kSolverInputData[i]["min"] < kCharPositionUsedCount[i])
+                    {
+                        kSolverInputData[i]["min"] = kCharPositionUsedCount[i];
+                    }
+                }
+            }
+            
+            // Update what we know for the Solver
+            for (var i = 0; i < kCurrentRow.length; ++i)
+            {
+                const kChar  = kCurrentRow[i].childNodes[0].textContent;
+                const kState = kCurrentRow[i].classList.item(0);
+                const nIndex = kValidChars.indexOf(kChar);
+
+                // If we're correct...
+                if (E_NODE_POSITION_CORRECT == kState)
+                {
+                    kSolverRowData[i] = kChar;
+                    if (kSolverInputData[nIndex]["max"] == 1)
+                    {
+                        for (var j = 0; j < kSolverRowData.length; ++j)
+                        {
+                            if (i != j)
+                            {
+                                kSolverRowData[j] = kSolverRowData[j].replace(kChar, "");
+                            }
+                        }
+
+                        // If this is an equals sign, nothing to the right can be an operator
+                        // anymore...
+                        if ("=" == kChar)
+                        {
+                            for (var j = i + 1; j < kSolverRowData.length; ++j)
+                            {
+                                kSolverRowData[j] = kSolverRowData[j].replace("*", "");
+                                kSolverRowData[j] = kSolverRowData[j].replace("/", "");
+                            }
+                        }
+                    }
+                }
+                else if (E_NODE_POSITION_UNUSED == kState)
+                {
+                    if (kSolverInputData[nIndex]["max"] == 0)
+                    {
+                        for (var j = 0; j < kSolverRowData.length; ++j)
+                        {
+                            kSolverRowData[j] = kSolverRowData[j].replace(kChar, "");
+                        }
+                    }
+                }
+                else if (E_NODE_POSITION_USED == kState)
+                {
+                    kSolverRowData[i] = kSolverRowData[i].replace(kChar, "");
+                }
+            }
+
+            // Determine whether to update the Max's based on the revised list
+            // of possible positions
+            for (var i = 0; i < kSolverInputData.length; ++i)
+            {
+                if (kSolverInputData[i]["max"] > 0)
+                {
+                    var nCount = 0;
+                    for (var j = 0; j < kSolverRowData.length; ++j)
+                    {
+                        if (kSolverRowData[j].includes(kValidChars[i]))
+                        {
+                            ++nCount;
+                        }
+                    }
+                    if (nCount < kSolverInputData[i]["max"])
+                    {
+                        kSolverInputData[i]["max"] = nCount;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        function countString(kString, kChar)
+        {
+            var nCount = 0;
+            for (var i = 0; i < kString.length; ++i)
+            {
+                if (kString[i] == kChar)
+                {
+                    ++nCount;
+                }
+            }
+            return nCount;
+        }
+
+        function generateNewSuggestionRecursive(kString, bStrict)
+        {
+            const nLength = kString.length;
+
+            // Determine if we've completed the solution...
+            if (kString.length == kSolverRowData.length)
+            {
+                const nIndex = kString.indexOf("=");
+                for (var i = 0; i < kSolverInputData.length; ++i)
+                {
+                    const nCount = countString(kString, kValidChars[i]);
+                    if (nCount < kSolverInputData[i]["min"])
+                    {
+                        return [false, ""];
+                    }
+                }
+
+                // Parse the Left/Right Side
+                const kLeftSideExpression  = kString.substr(0,nIndex);
+                const kRightSideExpression = kString.substr(nIndex+1);
+
+                if (bStrict)
+                {
+                    if (kLeftSideExpression.includes("*0"))
+                    {
+                        return [false, ""];
+                    }
+                    else if (kLeftSideExpression.indexOf("0*") == 0)
+                    {
+                        return [false, ""];
+                    }
+                }
+                if (kLeftSideExpression.includes("/0"))
+                {
+                    return [false, ""];
+                }
+
+                const kLeftSide  = parseExpression(kLeftSideExpression,  0, bStrict, false, true);
+                const kRightSide = parseExpression(kRightSideExpression, 0, bStrict, false, false);
+
+                if (kLeftSide[0] && kRightSide[0] && (kLeftSide[1] == kRightSide[1]))
+                {
+                    return [true, kString];
+                }
+
+                return [false, ""];
+            }
+
+            for (var i = 0; i < kSolverRowData[nLength].length; ++i)
+            {
+                const kChar      = kSolverRowData[nLength][i];
+                const nCharIndex = kValidChars.indexOf(kChar);
+                const nCharCount = countString(kString, kChar);
+
+                if (nCharCount < kSolverInputData[nCharIndex]["max"])
+                {
+                    const kResult = generateNewSuggestionRecursive(kString + kChar, bStrict);
+                    if (kResult[0])
+                    {
+                        return kResult;
+                    }
+                }
+            }
+
+            return [false, ""];
+        }
+
+        function generateNewSuggestion()
+        {
+            var kResult = generateNewSuggestionRecursive("", true);
+            if (kResult[0])
+            {
+                return kResult[1];
+            }
+            else
+            {
+                kResult = generateNewSuggestionRecursive("", false);
+                if (kResult[0])
+                {
+                    return kResult[1];
+                }
+            }
+
+            return "0+12/3=4";
+        }
     </script>
 
 </html>

@@ -116,3 +116,5 @@ In terms of the balanced equation, we need to find an equation that meets the kn
 ** Remaining Work **
 
 So this basically works for the data I've tried to date, but I'll be feeding this data on attrition to see where it falls over.  Also, I'm interested in whether this should always guess 0+12/3=4 on the second pass unless it's got more than X% of correct data, as so far, this typically solves one guess sooner...
+
+Obviously please share any games where this falls over so I can investigate!

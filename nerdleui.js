@@ -11,6 +11,10 @@ function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown=false)
         {
             rowNodes[i].appendChild(document.createTextNode("Copy"));
         }
+        else if (kText[i] == '\r')
+        {
+            rowNodes[i].appendChild(document.createTextNode("Enter"));
+        }
         else if (kText[i] == '\b')
         {
             rowNodes[i].appendChild(document.createTextNode("Delete"));
@@ -37,8 +41,9 @@ function initialise()
     // Root of the Solver Table
     kBodyRoot = document.getElementById("solver");
 
-    // Root of the Dimmer
-    kDimming = document.getElementById("dimmer");
+    // Root of the Main Entry
+    kMainEntry = document.getElementById("solverentry");
+    kColourEntry = document.getElementById("colourentry");
     
     // Create the First Row
     kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
@@ -49,6 +54,7 @@ function initialise()
     kVirtuakKeyboardNumbers   = addRow(document.getElementById("keyboardRow1"), kValidNumbers,   virtualKeyboardFunction, true);
     kVirtuakKeyboardOperators = addRow(document.getElementById("keyboardRow2"), kValidOperators, virtualKeyboardFunction, true);
     kVirtualKeyboardCommands  = addRow(document.getElementById("keyboardRow3"), "\n\b",          virtualKeyboardFunction, true);
+                                addRow(document.getElementById("keyboardRow4"), "\r",            virtualKeyboardFunction, true);
 
     // Suggestion
     kSuggestionRoot = document.getElementById("suggestion")
@@ -201,7 +207,8 @@ function registerKeypress(key, override=false)
                     }
                     eState = E_ENTERING_FEEDBACK;
                     kMessagesTextNode.textContent = "Perfect, enter this suggestion into Nerdle, then keep tapping on each entry until they're colored exactly the same as they were in Nerdle... then press Enter to accept."
-                    kDimming.classList.add(E_DIMMED);
+                    kMainEntry.classList.add(E_DIMMED);
+                    kColourEntry.classList.remove(E_DIMMED);
 
                     for (var i = 0; i < kCurrentRow.length; ++i)
                     {
@@ -284,7 +291,8 @@ function registerKeypress(key, override=false)
 
                     kMessagesTextNode.textContent = "Please enter an equation to check, or just press Enter whilst blank to accept the suggestion";
                     eState = E_ENTERING_EXPRESSION;
-                    kDimming.classList.remove(E_DIMMED);
+                    kMainEntry.classList.remove(E_DIMMED);
+                    kColourEntry.classList.add(E_DIMMED);
                     kVirtualKeyboardCommands[0].textContent = "Copy";
 
                     // Update the Suggestion

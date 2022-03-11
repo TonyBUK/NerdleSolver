@@ -21,7 +21,8 @@ const   E_DIMMED                    = "dimmed";
 var     eState                      = E_ENTERING_EXPRESSION;
 
 var     kBodyRoot                   = null;
-var     kDimming                    = null;
+var     kMainEntry                  = null;
+var     kColourEntry                = null;
 var     kSuggestionRoot             = null;
 var     kSuggestions                = null;
 var     kAllRows                    = [];

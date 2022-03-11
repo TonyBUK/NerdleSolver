@@ -111,4 +111,4 @@ In terms of the balanced equation, we need to find an equation that meets the kn
 * All known positions are filled with the input.
 * All unknown positions are filled with the possible inputs.
 * The total of each of the inputs that are used/not used all satisfy the known ranges for each input.
-* If possible, avoid solutions which abuse unary +/- and leading zeroes, these will only be used if all other possibilities have been eliminated.
+* If possible, avoid solutions which abuse stacking unary +/- and leading zeroes, these will only be used if all other possibilities have been eliminated.

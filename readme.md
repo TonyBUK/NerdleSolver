@@ -31,7 +31,7 @@ Firstly, this needs to implement Nerdle itself, so I've essentially reverse engi
   * Purple on the keyboard means at least one instance of the number/operator is needed, but the exact position is unknown.
   * Black on the guess means this instance of the number/operator isn't needed.
     * If it's the *only* time this number/operator has been guessed in this round, then it isn't used anywhere.
-    * If it's not the *only* time this number/operator has been guessed in this round, then it is needed, but this instance indicates we have oo many.
+    * If it's not the *only* time this number/operator has been guessed in this round, then it is needed, but this instance indicates we have too many.
   * Black on the keyboard means the number/operator is not used anywhere in the solution.
 
 So as indicated, black on guesses is where things get interested, as what it tells us is how *many* instances of a number/operator are needed.

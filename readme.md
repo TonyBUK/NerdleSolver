@@ -15,15 +15,14 @@ Firstly, this needs to implement Nerdle itself, so I've essentially reverse engi
 * Unary operators are allowed, and they stack, albeit I highly doubt they'll ever be used in any of the classic puzzles...
   * This means the following are 100% legal.
 
-
-    --1+-1=0 (this reduces to: 1 - 1 = 0)
-    +-+-1=+1 (this reduces to: 1     = 1)
+        --1+-1=0 (this reduces to: 1 - 1 = 0)
+        +-+-1=+1 (this reduces to: 1     = 1)
 
 
 * Leading zeroes are allowed, and there's no limit to them, albeit again, I highly doubt they'll ever be used in any of the classic puzzles...
   * This means the following are 100% legal.
   
-    01*001=1 (this reduces to: 1 * 1 = 1)
+        01*001=1 (this reduces to: 1 * 1 = 1)
 
 * Otherwise standard Wordle rules apply.
   * Green on the guess means a number/operator is in the right position.

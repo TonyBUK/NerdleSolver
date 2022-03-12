@@ -45,15 +45,29 @@ function parseIntegerWithUnary(kExpression, bStrict)
 
 function parseExpressionList(kExpressionList)
 {
-    const kOrderOfPrecedence = "*/+-";
+    const kOrderOfPrecedence = ["*/","+-"];
     while (kExpressionList.length > 1)
     {
         const nSanityCheck = kExpressionList.length;
         for (var i = 0; i < kOrderOfPrecedence.length; ++i)
         {
-            const kOperator = kOrderOfPrecedence.charAt(i);
-            while (kExpressionList.includes(kOperator))
+            while (kExpressionList.length > 1)
             {
+                var kOperator = null;
+                for (var j = 0; j < kExpressionList.length; ++j)
+                {
+                    if (kOrderOfPrecedence[i].includes(kExpressionList[j]))
+                    {
+                        kOperator = kExpressionList[j];
+                        break;
+                    }
+                }
+    
+                if (null == kOperator)
+                {
+                    break;
+                }
+    
                 const nOperatorIndex = kExpressionList.indexOf(kOperator);
                 switch (kOperator)
                 {
@@ -64,7 +78,7 @@ function parseExpressionList(kExpressionList)
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
-
+    
                     case "/":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] /
@@ -72,7 +86,7 @@ function parseExpressionList(kExpressionList)
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
-
+    
                     case "+":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] +
@@ -80,7 +94,7 @@ function parseExpressionList(kExpressionList)
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
-
+    
                     case "-":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] -
@@ -89,9 +103,9 @@ function parseExpressionList(kExpressionList)
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
                 }
-                break;
             }
         }
+
         if (nSanityCheck == kExpressionList.length)
         {
             alert(kExpressionList);

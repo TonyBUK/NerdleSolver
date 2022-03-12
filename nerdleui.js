@@ -9,7 +9,7 @@ function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown=false)
         rowNodes[i] = document.createElement("td");
         if (kText[i] == '\n')
         {
-            rowNodes[i].appendChild(document.createTextNode("Copy"));
+            rowNodes[i].appendChild(document.createTextNode("Use Suggestion"));
         }
         else if (kText[i] == '\r')
         {
@@ -185,7 +185,7 @@ function registerKeypress(key, override=false)
                 }
             } break;
 
-            case "Copy":
+            case "Use Suggestion":
             {
                 // If the entry is all blank, we're using the suggestion
                 for (var i = 0; i < kCurrentRow.length; ++i)
@@ -195,7 +195,7 @@ function registerKeypress(key, override=false)
                     kCurrentRow[i].classList.add(E_NODE_POSITION_UNKNOWN);
                 }
                 kVirtualKeyboardCommands[0].textContent = "Enter";
-            } break;
+            } // Deliberately fall through to Enter
 
             case "Enter":
             {
@@ -236,7 +236,7 @@ function registerKeypress(key, override=false)
                 
                 if (bAllBlank)
                 {
-                    kVirtualKeyboardCommands[0].textContent = "Copy";
+                    kVirtualKeyboardCommands[0].textContent = "Use Suggestion";
                 }
             } break;
 
@@ -294,7 +294,7 @@ function registerKeypress(key, override=false)
                     eState = E_ENTERING_EXPRESSION;
                     kMainEntry.classList.remove(E_DIMMED);
                     kColourEntry.classList.add(E_DIMMED);
-                    kVirtualKeyboardCommands[0].textContent = "Copy";
+                    kVirtualKeyboardCommands[0].textContent = "Use Suggestion";
 
                     // Update the Suggestion
                     kNewSuggestion = generateNewSuggestion();
@@ -375,5 +375,6 @@ function clickSuggestionFunction(e)
         var caller = e.target || e.srcElement;
         var nSuggestionId = kSuggestions.indexOf(caller)
         kCurrentRow[nSuggestionId].childNodes[0].textContent = caller.childNodes[0].textContent
+        kVirtualKeyboardCommands[0].textContent = "Enter";
     }
 }

@@ -4,9 +4,25 @@ The aim of this project is a fairly silly interactive html/javascript solver for
 
 To try the automatic solver, you can run it from from your web browser here: https://tonybuk.github.io/NerdleSolver/
 
-This is all performed in a self contained interactive webpage.  The idea is that the Nerdle Solver will generate a guess, you enter it into Nerdle itself, manually assign the colours back into the Nerdle Solver, and it will iterate guesses from there.
+The idea is that the Nerdle Solver will generate a guess, you enter it into Nerdle itself, manually assign the colours back into the Nerdle Solver, and it will iterate guesses from there.
 
 It goes without saying, this is 100% unaffiliated with Nerdle.  Currently it will only solve Nerdle Classic out of the box.  Adding support for Nerdle Pro isn't out of the question, but we'll see what the demand is.
+
+** Usage **
+
+Using the Webpage occurs in these repeating steps.
+
+1. Enter your guess into the Solver.  This can either be your own guess, or the suggestion.
+* If you want to use the Suggestion, just click on Use Suggestion.
+* Otherwise, type in your guess and Press Enter.
+3. Enter that same guess into Nerdle.
+4. Click on each of the Numbers/Operators in the solver until the colours match Nerdle.  Press Enter when done.
+* Super duper double check it matches.
+6. Go back to 1
+
+The Gold Suggestion at the bottom is there to let you know what the current suggestion is, if 
+
+** About **
 
 So... how does this work?
 

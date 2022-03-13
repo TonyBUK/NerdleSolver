@@ -43,7 +43,7 @@ function parseIntegerWithUnary(kExpression, bStrict)
     return (bPositive ? 1 : -1) * parseInt(kAbsoluteValue);
 }
 
-function parseExpressionList(kExpressionList)
+function parseExpressionList(kExpressionList, bStrict)
 {
     const kOrderOfPrecedence = ["*/","+-"];
     while (kExpressionList.length > 1)
@@ -67,22 +67,37 @@ function parseExpressionList(kExpressionList)
                 {
                     break;
                 }
-    
+
                 const nOperatorIndex = kExpressionList.indexOf(kOperator);
+
+                if (bStrict)
+                {
+                    if ((kExpressionList[nOperatorIndex-1] == 0) &&
+                        (kExpressionList[nOperatorIndex+1] == 0))
+                    {
+                        return NaN;
+                    }
+                }
+    
                 switch (kOperator)
                 {
                     case "*":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] *
-                                                            kExpressionList[nOperatorIndex+1];
+                                                          kExpressionList[nOperatorIndex+1];
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
     
                     case "/":
                     {
+                        if (0 == kExpressionList[nOperatorIndex+1])
+                        {
+                            return NaN;
+                        }
+
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] /
-                                                            kExpressionList[nOperatorIndex+1];
+                                                          kExpressionList[nOperatorIndex+1];
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
@@ -90,7 +105,7 @@ function parseExpressionList(kExpressionList)
                     case "+":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] +
-                                                            kExpressionList[nOperatorIndex+1];
+                                                          kExpressionList[nOperatorIndex+1];
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
@@ -98,7 +113,7 @@ function parseExpressionList(kExpressionList)
                     case "-":
                     {
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] -
-                                                            kExpressionList[nOperatorIndex+1];
+                                                          kExpressionList[nOperatorIndex+1];
                         kExpressionList.splice(nOperatorIndex+1, 1);
                         kExpressionList.splice(nOperatorIndex-1, 1);
                     } break;
@@ -108,8 +123,7 @@ function parseExpressionList(kExpressionList)
 
         if (nSanityCheck == kExpressionList.length)
         {
-            alert(kExpressionList);
-            break;
+            return NaN;
         }
     }
 
@@ -125,7 +139,6 @@ function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=tru
     var bAnyNumberFound = false;
     var kValidityString = kValidNumbersWithSign;
     var kCurrent        = "";
-    var bValid          = true;
     
     for (var i = 0; i < kExpression.length; ++i)
     {
@@ -196,7 +209,13 @@ function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=tru
         }
     }
 
-    return [true, parseExpressionList(kExpressionList)];
+    const nResult = parseExpressionList(kExpressionList, bStrict);
+    if (isNaN(nResult))
+    {
+        return [false, 0];
+    }
+
+    return [true, nResult];
 }
 
 function processExpression()
@@ -617,15 +636,6 @@ function generateNewSuggestionRecursive(kString, bStrict)
             {
                 return [false, ""];
             }
-            else if (kLeftSideExpression.indexOf("0*") == 0)
-            {
-                return [false, ""];
-            }
-        }
-
-        if (kLeftSideExpression.includes("/0"))
-        {
-            return [false, ""];
         }
 
         const kLeftSide  = parseExpression(kLeftSideExpression,  0, bStrict, false, true);
@@ -639,19 +649,44 @@ function generateNewSuggestionRecursive(kString, bStrict)
         return [false, ""];
     }
 
+    // Create a custom order based on data we've not seen yet
+    var kSolverLeastUsed = [];
     for (var i = 0; i < kSolverRowData[nLength].length; ++i)
     {
         const kChar      = kSolverRowData[nLength][i];
         const nCharIndex = kValidChars.indexOf(kChar);
         const nCharCount = countString(kString, kChar);
 
-        if (nCharCount < kSolverInputData[nCharIndex]["max"])
+        if ((0 == nCharCount) &&
+            (0 == kSolverInputData[nCharIndex]["min"]) &&
+            (nCharCount < kSolverInputData[nCharIndex]["max"]))
         {
-            const kResult = generateNewSuggestionRecursive(kString + kChar, bStrict);
-            if (kResult[0])
+            kSolverLeastUsed.push(kChar);
+        }
+    }
+
+    for (var i = 0; i < kSolverRowData[nLength].length; ++i)
+    {
+        const kChar      = kSolverRowData[nLength][i];
+        if (!kSolverLeastUsed.includes(kChar))
+        {
+            const nCharIndex = kValidChars.indexOf(kChar);
+            const nCharCount = countString(kString, kChar);
+            if (nCharCount < kSolverInputData[nCharIndex]["max"])
             {
-                return kResult;
+                kSolverLeastUsed.push(kChar);
             }
+        }
+    }
+
+    for (var i = 0; i < kSolverLeastUsed.length; ++i)
+    {
+        const kChar      = kSolverLeastUsed[i];
+        const nCharIndex = kValidChars.indexOf(kChar);
+        const kResult = generateNewSuggestionRecursive(kString + kChar, bStrict);
+        if (kResult[0])
+        {
+            return kResult;
         }
     }
 

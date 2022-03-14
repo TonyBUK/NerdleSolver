@@ -166,8 +166,13 @@ function toggleNode(node)
     }
 }
 
-function registerKeypress(key, override=false)
+function registerKeypress(key, override)
 {
+    if (undefined == override)
+    {
+        override = false;
+    }
+
     if (E_ENTERING_EXPRESSION == eState)
     {
         switch (key)

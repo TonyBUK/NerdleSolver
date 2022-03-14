@@ -133,11 +133,11 @@ In terms of the balanced equation, we need to find an equation that meets the kn
 Currently solutions are offered in three passes.
 
 * Pass 1: Satisfying answers.
- * This assumes that the answer won't include NOP arithmetic, such as 10*0-0=0, and that answers won't abuse unary operators or leading zeroes.
+  * This assumes that the answer won't include NOP arithmetic, such as 10*0-0=0, and that answers won't abuse unary operators or leading zeroes.
 * Pass 2: OK answers
- * This allows NOP arithmatic, but doesn't allow answers to abuse unary operators/leading zeroes.
+  * This allows NOP arithmatic, but doesn't allow answers to abuse unary operators/leading zeroes.
 * Pass 3: Naff Answers
- * If the parser accepts it, this will propose it.
+  * If the parser accepts it, this will propose it.
 
 *** Compatability ***
 

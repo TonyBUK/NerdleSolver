@@ -49,6 +49,15 @@ if (!String.prototype.includes)
         return -1 != this.indexOf(kString);
     }
 }
+
+if (!Array.prototype.includes)
+{
+    Array.prototype.includes = function(kValue)
+    {
+        return -1 != this.indexOf(kValue);
+    }
+}
+
 if (!DOMTokenList.prototype.replace)
 {
     DOMTokenList.prototype.replace = function(kRemove, kAdd)

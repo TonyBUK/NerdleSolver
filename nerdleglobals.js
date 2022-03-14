@@ -54,6 +54,6 @@ if (!DOMTokenList.prototype.replace)
     DOMTokenList.prototype.replace = function(kRemove, kAdd)
     {
         this.remove(kRemove);
-        this.add(kRemove);
+        this.add(kAdd);
     }
 }

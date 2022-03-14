@@ -141,4 +141,9 @@ Currently solutions are offered in three passes.
 
 *** Compatability ***
 
-This goes back at least as far as Internet Explorer 11 (what I'm forced to use at work).  Going back further would force me to give up const, which doesn't feel great, but if there's demand, I'm sure I can start regressing the code to support older standards........... maybe.
+This goes back at least as far as Internet Explorer 11 (what I'm forced to use at work).  Going back further would force me to give up const, which doesn't feel great, but if there's demand, I'm sure I can start regressing the code to support older standards........... maybe.  Though a quick look implies:
+
+* Internet Explorer 10 - Change all const's to var's (yuck).
+* Internet Explorer 9 - DOMTokenList no longer exists, meaning I'd probably need to re-write all the code for setting/removing class's for the CSS style.
+
+It's all doable, but again, given I've ostensibly designed this for a mobile, I'm a bit loathed to start making changes which overly comprimise the code.  IE 11 was at least just a few simple wrappers / default parameter handling.

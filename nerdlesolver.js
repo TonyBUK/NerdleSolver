@@ -1,11 +1,11 @@
-function parseIntegerWithUnary(kExpression, bStrict)
+function parseIntegerWithUnary(kExpression, eSolutionType)
 {
     // parseInt cannot cope with anything other than a unary -
     // So collapse them manually
     var bPositive    = true;
     var nFirstNumber = -1;
 
-    if (bStrict && (kExpression[0] == "+"))
+    if ((E_SOLUTION_NAFF != eSolutionType) && (kExpression[0] == "+"))
     {
         return NaN;
     }
@@ -19,7 +19,7 @@ function parseIntegerWithUnary(kExpression, bStrict)
         }
         else if (kValidNumbers.includes(kChar))
         {
-            if (bStrict && (i > 1))
+            if ((E_SOLUTION_NAFF != eSolutionType) && (i > 1))
             {
                 return NaN;
             }
@@ -28,7 +28,7 @@ function parseIntegerWithUnary(kExpression, bStrict)
     }
 
     const kAbsoluteValue = kExpression.substr(nFirstNumber);
-    if (bStrict)
+    if (E_SOLUTION_NAFF != eSolutionType)
     {
         if ((kAbsoluteValue.length > 1) && (kAbsoluteValue[0] == "0"))
         {
@@ -43,7 +43,7 @@ function parseIntegerWithUnary(kExpression, bStrict)
     return (bPositive ? 1 : -1) * parseInt(kAbsoluteValue);
 }
 
-function parseExpressionList(kExpressionList, bStrict)
+function parseExpressionList(kExpressionList, eSolutionType)
 {
     const kOrderOfPrecedence = ["*/","+-"];
     while (kExpressionList.length > 1)
@@ -70,7 +70,7 @@ function parseExpressionList(kExpressionList, bStrict)
 
                 const nOperatorIndex = kExpressionList.indexOf(kOperator);
 
-                if (bStrict)
+                if (E_SOLUTION_GOOD == eSolutionType)
                 {
                     if ((kExpressionList[nOperatorIndex-1] == 0) &&
                         (kExpressionList[nOperatorIndex+1] == 0))
@@ -130,8 +130,25 @@ function parseExpressionList(kExpressionList, bStrict)
     return kExpressionList[0];
 }
 
-function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=true, bAllowExpression=true)
+function parseExpression(kExpression, nOffset, eSolutionType, bRenderError, bAllowExpression)
 {
+    if (undefined == nOffset)
+    {
+        nOffset = 0;
+    }
+    if (undefined == eSolutionType)
+    {
+        eSolutionType = E_SOLUTION_NAFF;
+    }
+    if (undefined == bRenderError)
+    {
+        bRenderError = true;
+    }
+    if (undefined == bAllowExpression)
+    {
+        bAllowExpression = true;
+    }
+
     // Convert the Expression into an array of values and operators
     // Note: We'll resolve unaries at this stage to stop this being
     //       an absolute headache
@@ -159,7 +176,7 @@ function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=tru
         }
         else if (bAnyNumberFound)
         {
-            const nValue = parseIntegerWithUnary(kCurrent, bStrict);
+            const nValue = parseIntegerWithUnary(kCurrent, eSolutionType);
             if (isNaN(nValue))
             {
                 return [false, 0];
@@ -194,7 +211,7 @@ function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=tru
         return [false, 0];
     }
     
-    const nValue = parseIntegerWithUnary(kCurrent, bStrict);
+    const nValue = parseIntegerWithUnary(kCurrent, eSolutionType);
     if (isNaN(nValue))
     {
         return [false, 0];
@@ -209,7 +226,7 @@ function parseExpression(kExpression, nOffset=0, bStrict=false, bRenderError=tru
         }
     }
 
-    const nResult = parseExpressionList(kExpressionList, bStrict);
+    const nResult = parseExpressionList(kExpressionList, eSolutionType);
     if (isNaN(nResult))
     {
         return [false, 0];
@@ -609,7 +626,7 @@ function countString(kString, kChar)
     return nCount;
 }
 
-function generateNewSuggestionRecursive(kString, bStrict)
+function generateNewSuggestionRecursive(kString, eSolutionType)
 {
     const nLength = kString.length;
 
@@ -630,16 +647,8 @@ function generateNewSuggestionRecursive(kString, bStrict)
         const kLeftSideExpression  = kString.substr(0,nIndex);
         const kRightSideExpression = kString.substr(nIndex+1);
 
-        if (bStrict)
-        {
-            if (kLeftSideExpression.includes("*0"))
-            {
-                return [false, ""];
-            }
-        }
-
-        const kLeftSide  = parseExpression(kLeftSideExpression,  0, bStrict, false, true);
-        const kRightSide = parseExpression(kRightSideExpression, 0, bStrict, false, false);
+        const kLeftSide  = parseExpression(kLeftSideExpression,  0, eSolutionType, false, true);
+        const kRightSide = parseExpression(kRightSideExpression, 0, eSolutionType, false, false);
 
         if (kLeftSide[0] && kRightSide[0] && (kLeftSide[1] == kRightSide[1]))
         {
@@ -683,7 +692,7 @@ function generateNewSuggestionRecursive(kString, bStrict)
     {
         const kChar      = kSolverLeastUsed[i];
         const nCharIndex = kValidChars.indexOf(kChar);
-        const kResult = generateNewSuggestionRecursive(kString + kChar, bStrict);
+        const kResult = generateNewSuggestionRecursive(kString + kChar, eSolutionType);
         if (kResult[0])
         {
             return kResult;
@@ -695,17 +704,25 @@ function generateNewSuggestionRecursive(kString, bStrict)
 
 function generateNewSuggestion()
 {
-    var kResult = generateNewSuggestionRecursive("", true);
+    var kResult = generateNewSuggestionRecursive("", E_SOLUTION_GOOD);
     if (kResult[0])
     {
         return kResult[1];
     }
     else
     {
-        kResult = generateNewSuggestionRecursive("", false);
+        kResult = generateNewSuggestionRecursive("", E_SOLUTION_OK);
         if (kResult[0])
         {
             return kResult[1];
+        }
+        else
+        {
+            kResult = generateNewSuggestionRecursive("", E_SOLUTION_NAFF);
+            if (kResult[0])
+            {
+                return kResult[1];
+            }
         }
     }
 

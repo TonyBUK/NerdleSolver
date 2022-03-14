@@ -3,10 +3,15 @@ const   kValidNumbers               = "0123456789";
 const   kValidNumbersWithSign       = kValidNumbers + "+-";
 const   kValidChars                 = kValidNumbers + kValidOperators;
 
+// Solver Solutions
+const   E_SOLUTION_GOOD             = "E_SOLUTION_GOOD";
+const   E_SOLUTION_OK               = "E_SOLUTION_OK";
+const   E_SOLUTION_NAFF             = "E_SOLUTION_NAFF";
+
 // Solver Phases
-const   E_ENTERING_EXPRESSION       = Symbol("E_ENTERING_EXPRESSION");
-const   E_ENTERING_FEEDBACK         = Symbol("E_ENTERING_FEEDBACK");
-const   E_WINNER                    = Symbol("E_WINNER");
+const   E_ENTERING_EXPRESSION       = "E_ENTERING_EXPRESSION";
+const   E_ENTERING_FEEDBACK         = "E_ENTERING_FEEDBACK";
+const   E_WINNER                    = "E_WINNER";
 
 // Node States
 const   E_NODE_POSITION_CORRECT     = "nodePositionCorrect";
@@ -36,3 +41,19 @@ var     kVirtualKeyboardCommands    = null;
 
 var     kSolverRowData              = [];
 var     kSolverInputData            = [];
+
+if (!String.prototype.includes)
+{
+    String.prototype.includes = function(kString)
+    {
+        return -1 != this.indexOf(kString);
+    }
+}
+if (!DOMTokenList.prototype.replace)
+{
+    DOMTokenList.prototype.replace = function(kRemove, kAdd)
+    {
+        this.remove(kRemove);
+        this.add(kRemove);
+    }
+}

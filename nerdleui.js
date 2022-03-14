@@ -1,5 +1,10 @@
-function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown=false)
+function addRow(kBodyRoot, kText, listenerFunction, bSetUnknown)
 {
+    if (undefined == bSetUnknown)
+    {
+        bSetUnknown = false;
+    }
+
     rowNodes = [];
 
     kRowRootNode = document.createElement("tr");

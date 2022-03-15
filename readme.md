@@ -10,7 +10,7 @@ It goes without saying, this is 100% unaffiliated with Nerdle.  Currently it wil
 
 ** Usage **
 
-Using the Webpage occurs in these repeating steps.
+Using the Webpage is simply a matter of performing these repeating steps...
 
 1. Enter your guess into the Solver.  This can either be your own guess, or the suggestion.
 * If you want to use the Suggestion, just click on Use Suggestion.
@@ -130,8 +130,20 @@ In terms of the balanced equation, we need to find an equation that meets the kn
 * If possible, avoid solutions which abuse stacking unary +/- and leading zeroes, these will only be used if all other possibilities have been eliminated.
 * If possible, avoid solutions which abuse multiplying by zero, these will only be used if all other possibility have been eliminated.
 
-** Remaining Work **
+Currently solutions are offered in three passes.
 
-So this basically works for the data I've tried to date, but I'll be feeding this data on attrition to see where it falls over.  Also, I'm interested in whether this should always guess 0+12/3=4 on the second pass unless it's got more than X% of correct data, as so far, this typically solves one guess sooner...
+* Pass 1: Satisfying answers.
+  * This assumes that the answer won't include NOP arithmetic, such as 10*0-0=0, and that answers won't abuse unary operators or leading zeroes.
+* Pass 2: OK answers
+  * This allows NOP arithmatic, but doesn't allow answers to abuse unary operators/leading zeroes.
+* Pass 3: Naff Answers
+  * If the parser accepts it, this will propose it.
 
-Obviously please share any games where this falls over so I can investigate... just super duper 100% double check you entered the data correctly first!
+*** Compatability ***
+
+This goes back at least as far as Internet Explorer 11 (what I'm forced to use at work).  Going back further would force me to give up const, which doesn't feel great, but if there's demand, I'm sure I can start regressing the code to support older standards........... maybe.  Though a quick look implies:
+
+* Internet Explorer 10 - Change all const's to var's (yuck).
+* Internet Explorer 9 - DOMTokenList no longer exists, meaning I'd probably need to re-write all the code for setting/removing class's for the CSS style.
+
+It's all doable, but again, given I've ostensibly designed this for a mobile, I'm a bit loathed to start making changes which overly comprimise the code.  IE 11 was at least just a few simple wrappers / default parameter handling.

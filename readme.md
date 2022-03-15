@@ -8,7 +8,7 @@ The idea is that the Nerdle Solver will generate a guess, you enter it into Nerd
 
 It goes without saying, this is 100% unaffiliated with Nerdle.  Currently it will only solve Nerdle Classic and Speed out of the box.  There's hypothetical support for Mini and Instant, but these have to be enabled by hand editing the nerdleglobals.js currently.  I'll either let you choose the game on startup, or maybe just cheat and have extra HTML files to set this up.
 
-This just leaves Nerdle Pro, which is only supported if the operators match Nerdle Classic.  Support for the extra operators may be added in the future, albeit because Nerdle Pro supports arbitrary length expressions, I'll need to allow the first suggestion to be auto-generated as well, whereas I can cheat on Classic/Mini.  However the quality of the first guess is critical, since the more unique values that are discovered, the more information we are guarenteed to get on the first guess.
+This just leaves Nerdle Pro, which is only supported if the operators match Nerdle Classic, and the expression matches Classic or Mini.  Support for the extra operators may be added in the future, albeit because Nerdle Pro supports arbitrary length expressions, I'll need to allow the first suggestion to be auto-generated as well, whereas I can cheat on Classic/Mini.  However the quality of the first guess is critical, since the more unique values that are discovered, the more information we are guarenteed to get on the first guess.
 
 **Usage**
 

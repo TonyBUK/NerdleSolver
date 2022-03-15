@@ -5,14 +5,14 @@ function parseIntegerWithUnary(kExpression, eSolutionType)
     var bPositive    = true;
     var nFirstNumber = -1;
 
-    if ((E_SOLUTION_NAFF != eSolutionType) && (kExpression[0] == "+"))
-    {
-        return NaN;
-    }
-
     for (var i = 0; (nFirstNumber == -1) && (i < kExpression.length); ++i)
     {
         const kChar = kExpression.charAt(i);
+        if ((E_SOLUTION_NAFF != eSolutionType) && (kExpression[i] == "+"))
+        {
+            return NaN;
+        }
+
         if (kChar == "-")
         {
             bPositive = !bPositive;
@@ -46,6 +46,21 @@ function parseIntegerWithUnary(kExpression, eSolutionType)
 function parseExpressionList(kExpressionList, eSolutionType)
 {
     const kOrderOfPrecedence = ["*/","+-"];
+
+    if (E_SOLUTION_GOOD == eSolutionType)
+    {
+        for (var i = 0; i < kExpressionList.length; ++i)
+        {
+            if ("*/+-".includes(kExpressionList[i]))
+            {
+                if (kExpressionList[i+1] < 0)
+                {
+                    return NaN;
+                }
+            }
+        }
+    }
+
     while (kExpressionList.length > 1)
     {
         const nSanityCheck = kExpressionList.length;
@@ -298,104 +313,111 @@ function processExpression()
         return false;
     }
     
-    //////////////////////////////////////////////////////////////////
-    // Simple Test 4
-    //
-    // Equals at Beginning or End of Expression
-    const nEqualityIndex = kExpression.indexOf("=")
-    if ((nEqualityIndex == 0) || (nEqualityIndex == (kCurrentRow.length-1)))
+    if (false == bInstant)
     {
-        kIssuesTextNode.textContent = "Invalid position for equality '='";
-        kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
-        kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
-        return false;
-    }
-    
-    //////////////////////////////////////////////////////////////////
-    // Simple Test 4
-    //
-    // First character isn't a numeric, unary plus or minus
-    if (!kValidNumbersWithSign.includes(kExpression.charAt(0)))
-    {
-        kIssuesTextNode.textContent = "First character must be one of the following: +, - or a number";
-        kCurrentRow[0].classList.add(E_NODE_INVALID);
-        kCurrentRow[0].classList.remove(E_NODE_POSITION_UNKNOWN);
-        return false;
-    }
-    
-    //////////////////////////////////////////////////////////////////
-    // Simple Test 5
-    //
-    // First after the equality statement isn't a numeric, unary plus or minus
-    if (!kValidNumbersWithSign.includes(kExpression.charAt(nEqualityIndex+1)))
-    {
-        kIssuesTextNode.textContent = "First character after the equals '=' sign must be one of the following: +, - or a number";
-        kCurrentRow[nEqualityIndex+1].classList.add(E_NODE_INVALID);
-        kCurrentRow[nEqualityIndex+1].classList.remove(E_NODE_POSITION_UNKNOWN);
-        return false;
-    }
-    
-    //////////////////////////////////////////////////////////////////
-    // Simple Test 6
-    //
-    // Right Side of the Equality cannot contain an expression
-    //
-    // Note: This isn't actually true, Nerdles parser actually allows unary stacking
-    //       i.e. -+5 which evalues to -5 is allowed.
-    //            This is silly, but it's how Nerdle works for now.......
-    bValid              = true;
-    var bAnyNumberFound = false;
-    var kValidityString = kValidNumbersWithSign;
-    
-    for (var i = nEqualityIndex+1; i < kExpression.length; ++i)
-    {
-        const kChar = kExpression.charAt(i);
-        if (false == bAnyNumberFound)
+        //////////////////////////////////////////////////////////////////
+        // Simple Test 4
+        //
+        // Equals at Beginning or End of Expression
+        const nEqualityIndex = kExpression.indexOf("=")
+        if ((nEqualityIndex == 0) || (nEqualityIndex == (kCurrentRow.length-1)))
         {
-            if (kValidNumbers.includes(kChar))
+            kIssuesTextNode.textContent = "Invalid position for equality '='";
+            kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
+            kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
+            return false;
+        }
+        
+        //////////////////////////////////////////////////////////////////
+        // Simple Test 4
+        //
+        // First character isn't a numeric, unary plus or minus
+        if (!kValidNumbersWithSign.includes(kExpression.charAt(0)))
+        {
+            kIssuesTextNode.textContent = "First character must be one of the following: +, - or a number";
+            kCurrentRow[0].classList.add(E_NODE_INVALID);
+            kCurrentRow[0].classList.remove(E_NODE_POSITION_UNKNOWN);
+            return false;
+        }
+        
+        //////////////////////////////////////////////////////////////////
+        // Simple Test 5
+        //
+        // First after the equality statement isn't a numeric, unary plus or minus
+        if (!kValidNumbersWithSign.includes(kExpression.charAt(nEqualityIndex+1)))
+        {
+            kIssuesTextNode.textContent = "First character after the equals '=' sign must be one of the following: +, - or a number";
+            kCurrentRow[nEqualityIndex+1].classList.add(E_NODE_INVALID);
+            kCurrentRow[nEqualityIndex+1].classList.remove(E_NODE_POSITION_UNKNOWN);
+            return false;
+        }
+        
+        //////////////////////////////////////////////////////////////////
+        // Simple Test 6
+        //
+        // Right Side of the Equality cannot contain an expression
+        //
+        // Note: This isn't actually true, Nerdles parser actually allows unary stacking
+        //       i.e. -+5 which evalues to -5 is allowed.
+        //            This is silly, but it's how Nerdle works for now.......
+        bValid              = true;
+        var bAnyNumberFound = false;
+        var kValidityString = kValidNumbersWithSign;
+        
+        for (var i = nEqualityIndex+1; i < kExpression.length; ++i)
+        {
+            const kChar = kExpression.charAt(i);
+            if (false == bAnyNumberFound)
             {
-                bAnyNumberFound = true;
-                kValidityString = kValidNumbers;
+                if (kValidNumbers.includes(kChar))
+                {
+                    bAnyNumberFound = true;
+                    kValidityString = kValidNumbers;
+                }
+            }
+
+            if (!kValidityString.includes(kChar))
+            {
+                kCurrentRow[i].classList.add(E_NODE_INVALID);
+                kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
+                bValid = false;
             }
         }
 
-        if (!kValidityString.includes(kChar))
+        if (!bValid)
         {
-            kCurrentRow[i].classList.add(E_NODE_INVALID);
-            kCurrentRow[i].classList.remove(E_NODE_POSITION_UNKNOWN);
-            bValid = false;
+            kIssuesTextNode.textContent = "Right side of the equals '=' cannot contain an expression (operators shown in red)";
+            return false;
+        }
+
+        //////////////////////////////////////////////////////////////////
+        // Non Trivial Test
+        //
+        // Evaluate the Left/Right Side of the equals statement, and check
+        // for validity / equality
+        const kResultLeft = parseExpression(kExpression.substr(0, nEqualityIndex), 0);
+        if (!kResultLeft[0])
+        {
+            return false;
+        }
+
+        const kResultRight = parseExpression(kExpression.substr(nEqualityIndex+1), nEqualityIndex+1);
+        if (!kResultRight[0])
+        {
+            return false;
+        }
+
+        if (kResultLeft[1] != kResultRight[1])
+        {
+            kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
+            kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
+            kIssuesTextNode.textContent = "Expression is not equals.  Left side = " + kResultLeft[1] + ", Right Side = " + kResultRight[1] + ".";
+            return false;
         }
     }
-
-    if (!bValid)
+    else
     {
-        kIssuesTextNode.textContent = "Right side of the equals '=' cannot contain an expression (operators shown in red)";
-        return false;
-    }
-
-    //////////////////////////////////////////////////////////////////
-    // Non Trivial Test
-    //
-    // Evaluate the Left/Right Side of the equals statement, and check
-    // for validity / equality
-    const kResultLeft = parseExpression(kExpression.substr(0, nEqualityIndex), 0);
-    if (!kResultLeft[0])
-    {
-        return false;
-    }
-
-    const kResultRight = parseExpression(kExpression.substr(nEqualityIndex+1), nEqualityIndex+1);
-    if (!kResultRight[0])
-    {
-        return false;
-    }
-
-    if (kResultLeft[1] != kResultRight[1])
-    {
-        kCurrentRow[nEqualityIndex].classList.add(E_NODE_INVALID);
-        kCurrentRow[nEqualityIndex].classList.remove(E_NODE_POSITION_UNKNOWN);
-        kIssuesTextNode.textContent = "Expression is not equals.  Left side = " + kResultLeft[1] + ", Right Side = " + kResultRight[1] + ".";
-        return false;
+        bInstant = false;
     }
     
     return true;
@@ -590,9 +612,12 @@ function processResult()
     }
 
     // Determine whether to update the Max's based on the revised list
-    // of possible positions
+    // of possible positions, also sum the Min's
+    nMinCount = 0;
     for (var i = 0; i < kSolverInputData.length; ++i)
     {
+        nMinCount += kSolverInputData[i]["min"];
+
         if (kSolverInputData[i]["max"] > 0)
         {
             var nCount = 0;
@@ -607,6 +632,16 @@ function processResult()
             {
                 kSolverInputData[i]["max"] = nCount;
             }
+        }
+    }
+
+    // If the Mins exactly equal the number of entries, then we
+    // know exactly how many of each kind of input we're expecting
+    if (kCurrentRow.length == nMinCount)
+    {
+        for (var i = 0; i < kSolverInputData.length; ++i)
+        {
+            kSolverInputData[i]["max"] = kSolverInputData[i]["min"];
         }
     }
     
@@ -691,7 +726,6 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
     for (var i = 0; i < kSolverLeastUsed.length; ++i)
     {
         const kChar      = kSolverLeastUsed[i];
-        const nCharIndex = kValidChars.indexOf(kChar);
         const kResult = generateNewSuggestionRecursive(kString + kChar, eSolutionType);
         if (kResult[0])
         {

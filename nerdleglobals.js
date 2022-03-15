@@ -42,6 +42,9 @@ var     kVirtualKeyboardCommands    = null;
 var     kSolverRowData              = [];
 var     kSolverInputData            = [];
 
+var     bInstant                    = false;
+var     bMini                       = false;
+
 if (!String.prototype.includes)
 {
     String.prototype.includes = function(kString)

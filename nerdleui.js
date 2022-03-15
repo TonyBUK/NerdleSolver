@@ -51,7 +51,14 @@ function initialise()
     kColourEntry = document.getElementById("colourentry");
     
     // Create the First Row
-    kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+    if (false == bMini)
+    {
+        kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+    }
+    else
+    {
+        kCurrentRow = addRow(kBodyRoot, "      ",   clickFunction, true);
+    }
     kAllRows.push(kCurrentRow);
     selectNode(kCurrentRow[0]);
 
@@ -63,7 +70,14 @@ function initialise()
 
     // Suggestion
     kSuggestionRoot = document.getElementById("suggestion")
-    kSuggestions = addRow(kSuggestionRoot, "9*8-7=65", clickSuggestionFunction);
+    if (false == bMini)
+    {
+        kSuggestions = addRow(kSuggestionRoot, "9*8-7=65", clickSuggestionFunction);
+    }
+    else
+    {
+        kSuggestions = addRow(kSuggestionRoot, "10-7=3", clickSuggestionFunction);
+    }
 
     // Add the Issues Text Node
     kIssuesTextNode = document.createTextNode("No Issues");
@@ -296,7 +310,14 @@ function registerKeypress(key, override)
                 else
                 {
                     // Create the Next Row
-                    kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+                    if (false == bMini)
+                    {
+                        kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+                    }
+                    else
+                    {
+                        kCurrentRow = addRow(kBodyRoot, "      ",   clickFunction, true);
+                    }
                     kAllRows.push(kCurrentRow);
                     selectNode(kCurrentRow[0]);
 

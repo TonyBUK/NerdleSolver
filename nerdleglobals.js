@@ -1,5 +1,5 @@
 const   kValidOperators             = "+-*/=";
-const   kValidNumbers               = "0123456789";
+const   kValidNumbers               = "1234567890";
 const   kValidNumbersWithSign       = kValidNumbers + "+-";
 const   kValidChars                 = kValidNumbers + kValidOperators;
 
@@ -41,9 +41,6 @@ var     kVirtualKeyboardCommands    = null;
 
 var     kSolverRowData              = [];
 var     kSolverInputData            = [];
-
-var     bInstant                    = false;
-var     bMini                       = false;
 
 if (!String.prototype.includes)
 {

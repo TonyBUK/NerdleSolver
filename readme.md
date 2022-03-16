@@ -6,9 +6,11 @@ To try the automatic solver, you can run it from from your web browser here: htt
 
 The idea is that the Nerdle Solver will generate a guess, you enter it into Nerdle itself, manually assign the colours back into the Nerdle Solver, and it will iterate guesses from there.
 
-It goes without saying, this is 100% unaffiliated with Nerdle.  Currently it will only solve Nerdle Classic out of the box.  Adding support for Nerdle Pro isn't out of the question, but we'll see what the demand is.
+It goes without saying, this is 100% unaffiliated with Nerdle.  Currently it will only solve Nerdle Classic and Speed out of the box.  There's hypothetical support for Mini and Instant, but these have to be enabled by hand editing the nerdleglobals.js currently.  I'll either let you choose the game on startup, or maybe just cheat and have extra HTML files to set this up.
 
-** Usage **
+This just leaves Nerdle Pro, which is only supported if the operators match Nerdle Classic, and the expression matches Classic or Mini.  Support for the extra operators may be added in the future, albeit because Nerdle Pro supports arbitrary length expressions, I'll need to allow the first suggestion to be auto-generated as well, whereas I can cheat on Classic/Mini.  However the quality of the first guess is critical, since the more unique values that are discovered, the more information we are guarenteed to get on the first guess.
+
+**Usage**
 
 Using the Webpage is simply a matter of performing these repeating steps...
 
@@ -22,7 +24,7 @@ Using the Webpage is simply a matter of performing these repeating steps...
 
 The Gold Suggestion at the bottom is there to let you know what the current suggestion is, if 
 
-** About **
+**About**
 
 So... how does this work?
 
@@ -33,7 +35,6 @@ Firstly, this needs to implement Nerdle itself, so I've essentially reverse engi
 
         --1+-1=0 (this reduces to: 1 - 1 = 0)
         +-+-1=+1 (this reduces to: 1     = 1)
-
 
 * Leading zeroes are allowed, and there's no limit to them, albeit again, I highly doubt they'll ever be used in any of the classic puzzles...
   * This means the following are 100% legal.
@@ -114,6 +115,10 @@ Each time a green entry is returned, we can again refine two things:
 
 * We can refine the minimum number if tunes an input can occur.
 * We can refine the legal inputs for a given position since we know what it *must* be.
+
+And after processing these...
+
+* If the total of all the minimums for all possible entries exactly matches the number of spaces digits can go, then we know exactly how many of each type of number we can actually use.  Meaning we now just have to set all the max's to the min values.
 
 The idea is we want to end up with a scenario where:
 

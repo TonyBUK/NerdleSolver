@@ -420,10 +420,6 @@ function processExpression()
             return false;
         }
     }
-    else
-    {
-        bInstant = false;
-    }
     
     return true;
 }
@@ -499,6 +495,10 @@ function processResult()
     var bValid = true;
     kIssuesTextNode.textContent = "No Issues";
 
+    // Deep Copy to Buffer the Existing Data
+    kSolverRowDataBuffered      = JSON.parse(JSON.stringify(kSolverRowData));
+    kSolverInputDataBuffered    = JSON.parse(JSON.stringify(kSolverInputData));
+
     // Check for Incomplete Nodes
     for (var i = 0; i < kCurrentRow.length; ++i)
     {
@@ -519,10 +519,6 @@ function processResult()
         kIssuesTextNode.textContent = "Please click on *ALL* entries until they match the Nerdle result (any red entries)";
         return false;
     }
-
-    // Update what we know for the Virtual Keyboard
-    processResultForVirtualKeyboard(kValidNumbers,   kCurrentRow, kVirtuakKeyboardNumbers,   kSolverRowData);
-    processResultForVirtualKeyboard(kValidOperators, kCurrentRow, kVirtuakKeyboardOperators, kSolverRowData);
 
     // Gather stats for decision making
     var kCharPositionUsedCount   = [];
@@ -662,10 +658,6 @@ function processResult()
             kSolverInputData[i]["max"] = kSolverInputData[i]["min"];
         }
     }
-
-    // Update the Virtual Keyboard with what we know now about the Game State
-    processInputStateForVirtualKeyboard(kVirtuakKeyboardNumbers);
-    processInputStateForVirtualKeyboard(kVirtuakKeyboardOperators);
     
     return true;
 }
@@ -691,6 +683,11 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
     if (kString.length == kSolverRowData.length)
     {
         const nIndex = kString.indexOf("=");
+        if (-1 == nIndex)
+        {
+            return [false, ""];
+        }
+
         for (var i = 0; i < kSolverInputData.length; ++i)
         {
             const nCount = countString(kString, kValidChars[i]);
@@ -717,9 +714,44 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
 
     // Create a custom order based on data we've not seen yet
     var kSolverLeastUsed = [];
+    var bAllowOperators  = !kString.includes("=");
+    if (bAllowOperators)
+    {
+        if (kString.length > 0)
+        {
+            const kChar = kString[kString.length - 1];
+            if (kValidOperators.includes(kChar))
+            {
+                if (E_SOLUTION_GOOD == eSolutionType)
+                {
+                    if (!kValidNumbers.includes(kChar))
+                    {
+                        bAllowOperators = false;
+                    }
+                }
+                else
+                {
+                    if (!kValidNumbersWithSign.includes(kChar))
+                    {
+                        bAllowOperators = false;
+                    }
+                }
+            }
+        }
+    }
+
     for (var i = 0; i < kSolverRowData[nLength].length; ++i)
     {
         const kChar      = kSolverRowData[nLength][i];
+
+        if (!bAllowOperators)
+        {
+            if (!kValidNumbersWithSign.includes(kChar))
+            {
+                continue;
+            }
+        }
+
         const nCharIndex = kValidChars.indexOf(kChar);
         const nCharCount = countString(kString, kChar);
 
@@ -736,6 +768,24 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
         const kChar      = kSolverRowData[nLength][i];
         if (!kSolverLeastUsed.includes(kChar))
         {
+            if (!bAllowOperators)
+            {
+                if (E_SOLUTION_GOOD == eSolutionType)
+                {
+                    if (!kValidNumbers.includes(kChar))
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (!kValidNumbersWithSign.includes(kChar))
+                    {
+                        continue;
+                    }
+                }
+            }
+
             const nCharIndex = kValidChars.indexOf(kChar);
             const nCharCount = countString(kString, kChar);
             if (nCharCount < kSolverInputData[nCharIndex]["max"])
@@ -783,5 +833,5 @@ function generateNewSuggestion()
     }
 
     kIssuesTextNode.textContent = "Failed to find a suggestion... double check you coloured everything correctly, and if so, maybe raise an issue on the Github page and a link/description/screenshot of the puzzle?";
-    return "0+12/3=4";
+    return "";
 }

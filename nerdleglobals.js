@@ -42,6 +42,11 @@ var     kVirtualKeyboardCommands    = null;
 var     kSolverRowData              = [];
 var     kSolverInputData            = [];
 
+var     kSolverRowDataBuffered      = null;
+var     kSolverInputDataBuffered    = null;
+
+var     nRowLength                  = 8;
+
 if (!String.prototype.includes)
 {
     String.prototype.includes = function(kString)

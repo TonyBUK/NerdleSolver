@@ -49,16 +49,24 @@ function initialise()
     // Root of the Main Entry
     kMainEntry = document.getElementById("solverentry");
     kColourEntry = document.getElementById("colourentry");
-    
-    // Create the First Row
+
     if (false == bMini)
     {
-        kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+        nRowLength = 8;
     }
     else
     {
-        kCurrentRow = addRow(kBodyRoot, "      ",   clickFunction, true);
+        nRowLength = 6;
     }
+
+    var kDummyData = "";
+    for (var i = 0; i < nRowLength; ++i)
+    {
+        kDummyData += " ";
+    }
+
+    // Create the First Row
+    kCurrentRow = addRow(kBodyRoot, kDummyData, clickFunction, true);
     kAllRows.push(kCurrentRow);
     selectNode(kCurrentRow[0]);
 
@@ -67,17 +75,6 @@ function initialise()
     kVirtuakKeyboardOperators = addRow(document.getElementById("keyboardRow2"), kValidOperators, virtualKeyboardFunction, true);
     kVirtualKeyboardCommands  = addRow(document.getElementById("keyboardRow3"), "\n\b",          virtualKeyboardFunction, true);
                                 addRow(document.getElementById("keyboardRow4"), "\r",            virtualKeyboardFunction, true);
-
-    // Suggestion
-    kSuggestionRoot = document.getElementById("suggestion")
-    if (false == bMini)
-    {
-        kSuggestions = addRow(kSuggestionRoot, "9*8-7=65", clickSuggestionFunction);
-    }
-    else
-    {
-        kSuggestions = addRow(kSuggestionRoot, "10-7=3", clickSuggestionFunction);
-    }
 
     // Add the Issues Text Node
     kIssuesTextNode = document.createTextNode("No Issues");
@@ -115,11 +112,33 @@ function initialise()
             }
         }
     }
-    
+
+    // Initialise the Solver for the first suggestion
+    var nMaxForFirstGuess = Math.floor((nRowLength) / (kValidChars.length-1)) + 1;
     for (var i = 0; i < kValidChars.length; ++i)
     {
         const kChar         = kValidChars[i];
         kSolverInputData[i] = {};
+        if (kChar == "=")
+        {
+            kSolverInputData[i]["min"] = 1;
+            kSolverInputData[i]["max"] = 1;
+        }
+        else
+        {
+            kSolverInputData[i]["min"] = 0;
+            kSolverInputData[i]["max"] = nMaxForFirstGuess;
+        }
+    }
+
+    // Suggestion
+    var kSuggestion = generateNewSuggestion();
+    kSuggestionRoot = document.getElementById("suggestion")
+    kSuggestions = addRow(kSuggestionRoot, kSuggestion, clickSuggestionFunction);
+
+    for (var i = 0; i < kValidChars.length; ++i)
+    {
+        const kChar         = kValidChars[i];
         kSolverInputData[i]["min"] = 0;
         kSolverInputData[i]["max"] = kSolverRowData.length - 1;
         if (kChar == "=")
@@ -306,32 +325,75 @@ function registerKeypress(key, override)
                     kMessagesTextNode.textContent = "Winner!";
                     kColourEntry.classList.add(E_DIMMED);
                     eState = E_WINNER;
+
+
+                    // Update what we know for the Virtual Keyboard
+                    processResultForVirtualKeyboard(kValidNumbers,   kCurrentRow, kVirtuakKeyboardNumbers,   kSolverRowData);
+                    processResultForVirtualKeyboard(kValidOperators, kCurrentRow, kVirtuakKeyboardOperators, kSolverRowData);
+
+                    // Update the Virtual Keyboard with what we know now about the Game State
+                    processInputStateForVirtualKeyboard(kVirtuakKeyboardNumbers);
+                    processInputStateForVirtualKeyboard(kVirtuakKeyboardOperators);
                 }
                 else
                 {
-                    // Create the Next Row
-                    if (false == bMini)
+                    // First find a new suggestion just incase things went wrong...
+                    kNewSuggestion = generateNewSuggestion();
+
+                    if ("" != kNewSuggestion)
                     {
-                        kCurrentRow = addRow(kBodyRoot, "        ", clickFunction, true);
+                        // Update what we know for the Virtual Keyboard
+                        processResultForVirtualKeyboard(kValidNumbers,   kCurrentRow, kVirtuakKeyboardNumbers,   kSolverRowData);
+                        processResultForVirtualKeyboard(kValidOperators, kCurrentRow, kVirtuakKeyboardOperators, kSolverRowData);
+
+                        // Update the Virtual Keyboard with what we know now about the Game State
+                        processInputStateForVirtualKeyboard(kVirtuakKeyboardNumbers);
+                        processInputStateForVirtualKeyboard(kVirtuakKeyboardOperators);
+
+                        // Create the Next Row
+                        var kDummyData = "";
+                        for (var i = 0; i < nRowLength; ++i)
+                        {
+                            kDummyData += " ";
+                        }
+                        kCurrentRow = addRow(kBodyRoot, kDummyData, clickFunction, true);
+                        kAllRows.push(kCurrentRow);
+                        selectNode(kCurrentRow[0]);
+
+                        kMessagesTextNode.textContent = "Please enter an equation to check, or just press Enter whilst blank to accept the suggestion";
+                        eState = E_ENTERING_EXPRESSION;
+                        kMainEntry.classList.remove(E_DIMMED);
+                        kColourEntry.classList.add(E_DIMMED);
+                        kVirtualKeyboardCommands[0].textContent = "Use Suggestion";
+
+                        // Update the Suggestion
+                        for (var i = 0; i < kSuggestions.length; ++i)
+                        {
+                            kSuggestions[i].childNodes[0].textContent = kNewSuggestion[i];
+                        }
                     }
                     else
                     {
-                        kCurrentRow = addRow(kBodyRoot, "      ",   clickFunction, true);
-                    }
-                    kAllRows.push(kCurrentRow);
-                    selectNode(kCurrentRow[0]);
+                        for (var i = 0; i < kCurrentRow.length; ++i)
+                        {
+                            kCurrentRow[i].addEventListener("click", clickFunction);
+                        }
+                        eState = E_ENTERING_EXPRESSION;
+                        kMainEntry.classList.remove(E_DIMMED);
+                        kColourEntry.classList.add(E_DIMMED);
 
-                    kMessagesTextNode.textContent = "Please enter an equation to check, or just press Enter whilst blank to accept the suggestion";
-                    eState = E_ENTERING_EXPRESSION;
-                    kMainEntry.classList.remove(E_DIMMED);
-                    kColourEntry.classList.add(E_DIMMED);
-                    kVirtualKeyboardCommands[0].textContent = "Use Suggestion";
+                        // Deep Copy to Restore the Existing Data
+                        kSolverRowData      = JSON.parse(JSON.stringify(kSolverRowDataBuffered));
+                        kSolverInputData    = JSON.parse(JSON.stringify(kSolverInputDataBuffered));
 
-                    // Update the Suggestion
-                    kNewSuggestion = generateNewSuggestion();
-                    for (var i = 0; i < kSuggestions.length; ++i)
-                    {
-                        kSuggestions[i].childNodes[0].textContent = kNewSuggestion[i];
+                        for (var i = 0; i < kCurrentRow.length; ++i)
+                        {
+                            while (kCurrentRow[i].classList.length > 0)
+                            {
+                                kCurrentRow[i].classList.remove(kCurrentRow[i].classList.item(0));
+                            }
+                            kCurrentRow[i].classList.add(E_NODE_POSITION_UNKNOWN);
+                        }
                     }
                 }
             }

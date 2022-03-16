@@ -57,6 +57,11 @@ function parseExpressionList(kExpressionList, eSolutionType)
                 {
                     return NaN;
                 }
+                else if ((kExpressionList[i-1] == 0) ||
+                         (kExpressionList[i+1] == 0))
+                {
+                    return NaN;
+                }
             }
         }
     }
@@ -476,6 +481,19 @@ function processResultForVirtualKeyboard(kEntries, kCurrentRow, kVirtualKeyboard
     }
 }
 
+function processInputStateForVirtualKeyboard(kVirtualKeyboardRow)
+{
+    for (var i = 0; i < kVirtualKeyboardRow.length; ++i)
+    {
+        const kInitialWorstFound        = kVirtualKeyboardRow[i].classList.item(0);
+        const nSolverIndex              = kValidChars.indexOf(kVirtualKeyboardRow[i].childNodes[0].textContent);
+        if (0 == kSolverInputData[nSolverIndex]["max"])
+        {
+            kVirtualKeyboardRow[i].classList.replace(kInitialWorstFound, E_NODE_POSITION_UNUSED);
+        }
+    }
+}
+
 function processResult()
 {
     var bValid = true;
@@ -644,6 +662,10 @@ function processResult()
             kSolverInputData[i]["max"] = kSolverInputData[i]["min"];
         }
     }
+
+    // Update the Virtual Keyboard with what we know now about the Game State
+    processInputStateForVirtualKeyboard(kVirtuakKeyboardNumbers);
+    processInputStateForVirtualKeyboard(kVirtuakKeyboardOperators);
     
     return true;
 }

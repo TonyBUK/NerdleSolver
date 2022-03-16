@@ -2,7 +2,11 @@
 
 The aim of this project is a fairly silly interactive html/javascript solver for https://nerdlegame.com/classic/
 
-To try the automatic solver, you can run it from from your web browser here: https://tonybuk.github.io/NerdleSolver/
+To try the automatic solver, you can run it from from your web browser here:
+* Classic: https://tonybuk.github.io/NerdleSolver/
+* Mini: https://tonybuk.github.io/NerdleSolver/mini.html
+* Instant: https://tonybuk.github.io/NerdleSolver/instant.html
+* Pro: Coming soon...
 
 The idea is that the Nerdle Solver will generate a guess, you enter it into Nerdle itself, manually assign the colours back into the Nerdle Solver, and it will iterate guesses from there.
 
@@ -138,13 +142,18 @@ In terms of the balanced equation, we need to find an equation that meets the kn
 Currently solutions are offered in three passes.
 
 * Pass 1: Satisfying answers.
-  * This assumes that the answer won't include NOP arithmetic, such as 10*0-0=0, and that answers won't abuse unary operators or leading zeroes.
+  * This assumes that the answer won't include NOP arithmetic, such as 10*0-0=0 (basically it will disallow any 0's), and that answers won't abuse unary operators or leading zeroes.
 * Pass 2: OK answers
   * This allows NOP arithmatic, but doesn't allow answers to abuse unary operators/leading zeroes.
 * Pass 3: Naff Answers
   * If the parser accepts it, this will propose it.
 
-*** Compatability ***
+One interesting thing I found was the Nerdle tests the associativity of a solution, i.e. 1+2=3 and 2+1=3, as long as you enable "Allow commutative answers" in the settings of Nerdle (default), are interchangeable.  This isn't something I believe my solver needs to be aware of due to the following:
+
+1. If my solver proposes an answer that's commutative with the real answer, Nerdle will just accept it, up until then Nerdle will *NOT* re-arrange the expression.
+2. If my solver proposes an answer that's commutative with the real answer and Nerdle doesn't accept it (i.e. it's disabled), my solver will eventually propose the real answer anyway.
+
+***Compatability***
 
 This goes back at least as far as Internet Explorer 11 (what I'm forced to use at work).  Going back further would force me to give up const, which doesn't feel great, but if there's demand, I'm sure I can start regressing the code to support older standards........... maybe.  Though a quick look implies:
 
@@ -152,3 +161,13 @@ This goes back at least as far as Internet Explorer 11 (what I'm forced to use a
 * Internet Explorer 9 - DOMTokenList no longer exists, meaning I'd probably need to re-write all the code for setting/removing class's for the CSS style.
 
 It's all doable, but again, given I've ostensibly designed this for a mobile, I'm a bit loathed to start making changes which overly comprimise the code.  IE 11 was at least just a few simple wrappers / default parameter handling.
+
+***TO DO***
+
+* Pro support
+  * This will require reworking of the basic initialation routine, as currently it's hard coded to three states.
+    * Nerdle Classic - Fixed to 8 columns, first guess is always 9*7-7=65 (hard coded)
+    * Nerdle Mini - Fixed to 6 columns, first guess is always 10-7=3 (hard coded)
+    * Nerdle Instant - Identical to Nerdle Classic, but the first entry bypasses the entry validation rules pertaining to ensuring the equation is valid.
+  * What would be better is if the columns was variable, the first guess was auto-generated (but *tries* to come up with something that uses as many input values as possible at least once).
+* Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.

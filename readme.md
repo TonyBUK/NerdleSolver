@@ -169,7 +169,7 @@ It's all doable, but again, given I've ostensibly designed this for a mobile, I'
     * Nerdle Classic - Fixed to 8 columns.
     * Nerdle Mini - Fixed to 6 columns.
     * Nerdle Instant - Identical to Nerdle Classic, but the first entry bypasses the entry validation rules pertaining to ensuring the equation is valid.
-  * The first guess is now auto-generated, with rules in place to try and maximize the spread of digits, however, once the game grid goes about 10 digits (12 being a limit from my testing), the first guess takes exponentially longer to find.
-    * In all honesty, I was surprised DFS worked at all here.  I may re-visit this to see if there's a better / more browser friendly way of finding a solution.
+  * The first guess is now auto-generated, with rules in place to try and maximize the spread of digits.
+    * In all honesty, I was surprised DFS worked at all here.  I may re-visit this to see if there's a better / more browser friendly way of finding a solution.  Especially now it's way faster, I can try and improve the quality of the first solution to encourage more unique digits.
   * Interestingly, Nerdle Pro seems to have a width limit of 16, I'm not going to implement that limit, albeit depending o how well I get the expression generator working, there may be natural limits to deal with anyway.
 * Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.

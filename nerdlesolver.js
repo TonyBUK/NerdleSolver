@@ -27,7 +27,7 @@ function parseIntegerWithUnary(kExpression, eSolutionType)
         }
     }
 
-    const kAbsoluteValue = kExpression.substr(nFirstNumber);
+    const kAbsoluteValue = kExpression.substring(nFirstNumber);
     if (E_SOLUTION_NAFF != eSolutionType)
     {
         if ((kAbsoluteValue.length > 1) && (kAbsoluteValue[0] == "0"))
@@ -412,13 +412,13 @@ function processExpression()
         //
         // Evaluate the Left/Right Side of the equals statement, and check
         // for validity / equality
-        const kResultLeft = parseExpression(kExpression.substr(0, nEqualityIndex), 0);
+        const kResultLeft = parseExpression(kExpression.substring(0, nEqualityIndex), 0);
         if (!kResultLeft[0])
         {
             return false;
         }
 
-        const kResultRight = parseExpression(kExpression.substr(nEqualityIndex+1), nEqualityIndex+1);
+        const kResultRight = parseExpression(kExpression.substring(nEqualityIndex+1), nEqualityIndex+1);
         if (!kResultRight[0])
         {
             return false;
@@ -711,8 +711,8 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
         }
 
         // Parse the Left/Right Side
-        const kLeftSideExpression  = kString.substr(0,nIndex);
-        const kRightSideExpression = kString.substr(nIndex+1);
+        const kLeftSideExpression  = kString.substring(0,nIndex);
+        const kRightSideExpression = kString.substring(nIndex+1);
 
         const kLeftSide  = parseExpression(kLeftSideExpression,  0, eSolutionType, false, true);
         const kRightSide = parseExpression(kRightSideExpression, 0, eSolutionType, false, false);

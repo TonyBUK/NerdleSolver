@@ -150,7 +150,7 @@ function parseExpressionList(kExpressionList, eSolutionType)
     return kExpressionList[0];
 }
 
-function parseExpression(kExpression, nOffset, eSolutionType, bRenderError, bAllowExpression)
+function parseExpression(kExpression, nOffset, eSolutionType, bRenderError, bAllowExpression, bAllowNonInteger)
 {
     if (undefined == nOffset)
     {
@@ -162,11 +162,15 @@ function parseExpression(kExpression, nOffset, eSolutionType, bRenderError, bAll
     }
     if (undefined == bRenderError)
     {
-        bRenderError = true;
+        bRenderError = false;
     }
     if (undefined == bAllowExpression)
     {
         bAllowExpression = true;
+    }
+    if (undefined == bAllowNonInteger)
+    {
+        bAllowNonInteger = false;
     }
 
     // Convert the Expression into an array of values and operators
@@ -250,6 +254,14 @@ function parseExpression(kExpression, nOffset, eSolutionType, bRenderError, bAll
     if (isNaN(nResult))
     {
         return [false, 0];
+    }
+
+    if (!bAllowNonInteger)
+    {
+        if (0 != (nResult % 1))
+        {
+            return [false, 0];
+        }
     }
 
     return [true, nResult];
@@ -677,10 +689,11 @@ function countString(kString, kChar)
 
 function generateNewSuggestionRecursive(kString, eSolutionType)
 {
-    const nLength = kString.length;
+    const nLength       = kString.length;
+    const nTargetLength = kSolverRowData.length;
 
     // Determine if we've completed the solution...
-    if (kString.length == kSolverRowData.length)
+    if (nLength == nTargetLength)
     {
         const nIndex = kString.indexOf("=");
         if (-1 == nIndex)
@@ -712,74 +725,73 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
         return [false, ""];
     }
 
-    // Create a custom order based on data we've not seen yet
-    var kSolverLeastUsed = [];
-    var bAllowOperators  = !kString.includes("=");
-    if (bAllowOperators)
+    var nMinimumRemainingCount = 0;
+    var kSolverLeastUsed       = [];
+
+    for (var i = 0; i < kSolverInputData.length; ++i)
     {
-        if (kString.length > 0)
+        const kChar = kValidChars[i];
+        if (kSolverInputData[i]["min"] > 0)
         {
-            const kChar = kString[kString.length - 1];
-            if (kValidOperators.includes(kChar))
+            const nCharCount = countString(kString, kChar);
+            if (nCharCount < kSolverInputData[i]["min"])
             {
-                if (E_SOLUTION_GOOD == eSolutionType)
+                nMinimumRemainingCount += (kSolverInputData[i]["min"] - nCharCount);
+                if (kSolverRowData[nLength].includes(kChar))
                 {
-                    if (!kValidNumbers.includes(kChar))
-                    {
-                        bAllowOperators = false;
-                    }
-                }
-                else
-                {
-                    if (!kValidNumbersWithSign.includes(kChar))
-                    {
-                        bAllowOperators = false;
-                    }
+                    kSolverLeastUsed.push(kChar);
                 }
             }
         }
     }
 
-    for (var i = 0; i < kSolverRowData[nLength].length; ++i)
+    if (nMinimumRemainingCount < (nTargetLength - nLength))
     {
-        const kChar      = kSolverRowData[nLength][i];
-
-        if (!bAllowOperators)
+        // Create a custom order based on data we've not seen yet
+        var bAllowOperators  = !kString.includes("=");
+        if (bAllowOperators)
         {
-            if (!kValidNumbersWithSign.includes(kChar))
+            if (nTargetLength - nLength <= 1)
             {
-                continue;
+                return [false, ""];
+            }
+
+            if (nLength > 0)
+            {
+                const kChar = kString[nLength - 1];
+                if (kValidOperators.includes(kChar))
+                {
+                    if (E_SOLUTION_GOOD == eSolutionType)
+                    {
+                        if (!kValidNumbers.includes(kChar))
+                        {
+                            bAllowOperators = false;
+                        }
+                    }
+                    else
+                    {
+                        if (!kValidNumbersWithSign.includes(kChar))
+                        {
+                            bAllowOperators = false;
+                        }
+                    }
+                }
             }
         }
 
-        const nCharIndex = kValidChars.indexOf(kChar);
-        const nCharCount = countString(kString, kChar);
-
-        if ((0 == nCharCount) &&
-            (0 == kSolverInputData[nCharIndex]["min"]) &&
-            (nCharCount < kSolverInputData[nCharIndex]["max"]))
+        for (var i = 0; i < kSolverRowData[nLength].length; ++i)
         {
-            kSolverLeastUsed.push(kChar);
-        }
-    }
+            const kChar      = kSolverRowData[nLength][i];
 
-    for (var i = 0; i < kSolverRowData[nLength].length; ++i)
-    {
-        const kChar      = kSolverRowData[nLength][i];
-        if (!kSolverLeastUsed.includes(kChar))
-        {
             if (!bAllowOperators)
             {
-                if (E_SOLUTION_GOOD == eSolutionType)
+                if (!kValidNumbersWithSign.includes(kChar))
                 {
-                    if (!kValidNumbers.includes(kChar))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
-                else
+                else if (E_SOLUTION_GOOD == eSolutionType)
                 {
-                    if (!kValidNumbersWithSign.includes(kChar))
+                    if ("+" == kChar)
                     {
                         continue;
                     }
@@ -788,16 +800,81 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
 
             const nCharIndex = kValidChars.indexOf(kChar);
             const nCharCount = countString(kString, kChar);
-            if (nCharCount < kSolverInputData[nCharIndex]["max"])
+
+            if ((0 == nCharCount) &&
+                (0 == kSolverInputData[nCharIndex]["min"]) &&
+                (nCharCount < kSolverInputData[nCharIndex]["max"]))
             {
-                kSolverLeastUsed.push(kChar);
+                if (kValidOperators.includes(kChar))
+                {
+                    kSolverLeastUsed.unshift(kChar);
+                }
+                else
+                {
+                    kSolverLeastUsed.push(kChar);
+                }
+            }
+        }
+
+        for (var i = 0; i < kSolverRowData[nLength].length; ++i)
+        {
+            const kChar      = kSolverRowData[nLength][i];
+            if (!kSolverLeastUsed.includes(kChar))
+            {
+                if (!bAllowOperators)
+                {
+                    if (E_SOLUTION_GOOD == eSolutionType)
+                    {
+                        if (!kValidNumbers.includes(kChar))
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (!kValidNumbersWithSign.includes(kChar))
+                        {
+                            continue;
+                        }
+                    }
+                }
+
+                const nCharIndex = kValidChars.indexOf(kChar);
+                const nCharCount = countString(kString, kChar);
+                if (nCharCount < kSolverInputData[nCharIndex]["max"])
+                {
+                    kSolverLeastUsed.push(kChar);
+                }
             }
         }
     }
-
+    
     for (var i = 0; i < kSolverLeastUsed.length; ++i)
     {
         const kChar      = kSolverLeastUsed[i];
+        if ("=" == kChar)
+        {
+            var kExpressionResult = parseExpression(kString, 0, eSolutionType);
+            if (!kExpressionResult[0])
+            {
+                continue;
+            }
+
+            const nMinLength       = kExpressionResult[1].toString().length;
+            const nRemainingLength = nTargetLength - nLength - 1;
+            if (nRemainingLength < nMinLength)
+            {
+                continue;
+            }
+            else if (E_SOLUTION_NAFF != eSolutionType)
+            {
+                if (nRemainingLength != nMinLength)
+                {
+                    continue;
+                }
+            }
+        }
+
         const kResult = generateNewSuggestionRecursive(kString + kChar, eSolutionType);
         if (kResult[0])
         {

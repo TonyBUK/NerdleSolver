@@ -26,7 +26,7 @@ Using the Webpage is simply a matter of performing these repeating steps...
 * Super duper double check it matches.
 6. Go back to 1
 
-The Gold Suggestion at the bottom is there to let you know what the current suggestion is, if 
+The Gold Suggestion at the bottom is there to let you know what the current suggestion is.
 
 **About**
 
@@ -165,9 +165,11 @@ It's all doable, but again, given I've ostensibly designed this for a mobile, I'
 ***TO DO***
 
 * Pro support
-  * This will require reworking of the basic initialation routine, as currently it's hard coded to three states.
-    * Nerdle Classic - Fixed to 8 columns, first guess is always 9*7-7=65 (hard coded)
-    * Nerdle Mini - Fixed to 6 columns, first guess is always 10-7=3 (hard coded)
+  * This will require reworking of the basic initialisation routine, as currently it's hard coded to three states.
+    * Nerdle Classic - Fixed to 8 columns.
+    * Nerdle Mini - Fixed to 6 columns.
     * Nerdle Instant - Identical to Nerdle Classic, but the first entry bypasses the entry validation rules pertaining to ensuring the equation is valid.
-  * What would be better is if the columns was variable, the first guess was auto-generated (but *tries* to come up with something that uses as many input values as possible at least once).
+  * The first guess is now auto-generated, with rules in place to try and maximize the spread of digits, however, once the game grid goes about 10 digits (12 being a limit from my testing), the first guess takes exponentially longer to find.
+    * In all honesty, I was surprised DFS worked at all here.  I may re-visit this to see if there's a better / more browser friendly way of finding a solution.
+  * Interestingly, Nerdle Pro seems to have a width limit of 16, I'm not going to implement that limit, albeit depending o how well I get the expression generator working, there may be natural limits to deal with anyway.
 * Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.

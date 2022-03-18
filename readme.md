@@ -173,4 +173,4 @@ It's all doable, but again, given I've ostensibly designed this for a mobile, I'
     * In all honesty, I was surprised DFS worked at all here.  I may re-visit this to see if there's a better / more browser friendly way of finding a solution.  Especially now it's way faster, I can try and improve the quality of the first solution to encourage more unique digits.
   * Interestingly, Nerdle Pro seems to have a width limit of 16, I'm not going to implement that limit, albeit depending o how well I get the expression generator working, there may be natural limits to deal with anyway.
 * Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.
- * Plus the UI is kind of misleading for Instant Mode, since there's no reason to offer a first suggestion.
+  * Plus the UI is kind of misleading for Instant Mode, since there's no reason to offer a first suggestion.

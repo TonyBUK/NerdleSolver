@@ -174,3 +174,8 @@ It's all doable, but again, given I've ostensibly designed this for a mobile, I'
   * Interestingly, Nerdle Pro seems to have a width limit of 16, I'm not going to implement that limit, albeit depending o how well I get the expression generator working, there may be natural limits to deal with anyway.
 * Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.
   * Plus the UI is kind of misleading for Instant Mode, since there's no reason to offer a first suggestion.
+* Clearly some sort of heuristics needs to be added as to what the fundamental intent of the suggestion is.  Currently one of the Nerdle Games got the solver into a horrible situation, whereby the answer was: 27+20=47
+  * The Solver quickly got to (on move 2):
+    * 2X+20=4X
+  * But: 0, 2, 6, 7, 8 and 9 were all viable solutions, and could only be eliminated one at a time playing the naive strategy of going straight for the answer.  A better approach would be to construct an algorithm with the data we know the least about here, being 6, 7, 8 and 9, since we know each of these can only appear 2 or no times to satisfy the equation.  If they all go black (no times), then the solution is 50/50 between 0 and 2, meaning we solve in a worst case of 5 moves.  If one of them goes green/purple, then we know the answer and solve in 4.
+    * Whereas for the naive approach, you have a 1/3 chance of failing, as you can only try 4 of the 6 possible values.

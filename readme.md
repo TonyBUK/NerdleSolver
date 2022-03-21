@@ -34,13 +34,13 @@ So... how does this work?
 
 Firstly, this needs to implement Nerdle itself, so I've essentially reverse engineered the parser by just throwing various inputs at it.  So here's some rules.
 
-* Unary operators are allowed, and they stack, albeit I highly doubt they'll ever be used in any of the classic puzzles...
+* Unary operators are allowed, and they stack, albeit I highly doubt they'll ever be used in any of the classic puzzles... infact the FAQ states that negative values won't ever be used in solutions.
   * This means the following are 100% legal.
 
         --1+-1=0 (this reduces to: 1 - 1 = 0)
         +-+-1=+1 (this reduces to: 1     = 1)
 
-* Leading zeroes are allowed, and there's no limit to them, albeit again, I highly doubt they'll ever be used in any of the classic puzzles...
+* Leading zeroes are allowed, and there's no limit to them, albeit again, the FAQ states these won't form part of a real solution.
   * This means the following are 100% legal.
   
         01*001=1 (this reduces to: 1 * 1 = 1)
@@ -172,6 +172,7 @@ It's all doable, but again, given I've ostensibly designed this for a mobile, I'
   * The first guess is now auto-generated, with rules in place to try and maximize the spread of digits.
     * In all honesty, I was surprised DFS worked at all here.  I may re-visit this to see if there's a better / more browser friendly way of finding a solution.  Especially now it's way faster, I can try and improve the quality of the first solution to encourage more unique digits.
   * Interestingly, Nerdle Pro seems to have a width limit of 16, I'm not going to implement that limit, albeit depending o how well I get the expression generator working, there may be natural limits to deal with anyway.
+  * I do still dislike the fact the auto-generated solution invariably starts with a negative number due to how I bias the results.  The reason I dislike this is because Nerdle explicitly states in the FAQ that their answers won't use negative values, meaning the first minus can never be correct.
 * Another UX pass... maybe some sort of interactive tutorial, or some better context clues as to how to use the solver.
   * Plus the UI is kind of misleading for Instant Mode, since there's no reason to offer a first suggestion.
 * Clearly some sort of heuristics needs to be added as to what the fundamental intent of the suggestion is.  Currently one of the Nerdle Games got the solver into a horrible situation, whereby the answer was: 27+20=47

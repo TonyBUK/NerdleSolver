@@ -111,10 +111,18 @@ function parseExpressionList(kExpressionList, eSolutionType)
     
                     case "/":
                     {
+                        // Divid by Zero
                         if (0 == kExpressionList[nOperatorIndex+1])
                         {
                             return NaN;
                         }
+
+                        // Prevent good solutions from allowing non-integer components
+                        if ((E_SOLUTION_GOOD == eSolutionType) &&
+                            (0 != (kExpressionList[nOperatorIndex-1] % kExpressionList[nOperatorIndex+1])))
+                        {
+                            return NaN;
+                        }                               
 
                         kExpressionList[nOperatorIndex] = kExpressionList[nOperatorIndex-1] /
                                                           kExpressionList[nOperatorIndex+1];
@@ -852,6 +860,16 @@ function generateNewSuggestionRecursive(kString, eSolutionType)
     for (var i = 0; i < kSolverLeastUsed.length; ++i)
     {
         const kChar      = kSolverLeastUsed[i];
+
+        // Just incase, a Nerdle solution will never start with an operator
+        if ((E_SOLUTION_GOOD == eSolutionType) && (0 == kString.length))
+        {
+            if ((kChar == "-") || (kChar == "+"))
+            {
+                continue;
+            }
+        }
+
         if ("=" == kChar)
         {
             var kExpressionResult = parseExpression(kString, 0, eSolutionType);
